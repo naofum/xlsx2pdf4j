@@ -1,0 +1,39 @@
+/*
+ * Copyright 2026 Naofumi Fukue
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.github.naofum.xlsx2pdf4j.internal.docx;
+
+import com.github.naofum.xlsx2pdf4j.internal.drawingml.DrawingStyle;
+import com.github.naofum.xlsx2pdf4j.internal.drawingml.PresetShape;
+import com.github.naofum.xlsx2pdf4j.internal.drawingml.ShapeAdjustments;
+import com.github.naofum.xlsx2pdf4j.internal.drawingml.ShapeTextBody;
+
+import java.awt.geom.Rectangle2D;
+import java.util.function.DoubleFunction;
+
+/**
+ * A WordprocessingML drawing adapted to the shared DrawingML models.
+ */
+public record DocxShape(
+        String name,
+        PresetShape preset,
+        ShapeAdjustments adjustments,
+        DrawingStyle style,
+        Rectangle2D frame,
+        ShapeTextBody text,
+        boolean inline,
+        DoubleFunction<ShapeTextBody> textAtScale) {
+}

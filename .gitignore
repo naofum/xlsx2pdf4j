@@ -1,0 +1,7 @@
+target/
+*.class
+.idea/
+*.iml
+.vscode/
+memo.txt
+*_private.txt

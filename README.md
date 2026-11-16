@@ -1,0 +1,202 @@
+# xlsx2pdf4j
+
+Excel（`.xlsx` / `.xlsm`）を Office / LibreOffice に依存せず PDF に変換する Java ライブラリです。
+
+- 入力: `.xlsx` / `.xlsm`（マクロは無視）
+- 出力: ページ単位のラスタ画像を埋め込んだ PDF
+- 描画: Apache POI + Java2D + Apache PDFBox + XChart
+- 見た目はページ画像、検索・コピー用の不可視テキスト層を付与
+- Java 17 以上
+
+## ビルド
+
+```powershell
+mvn clean install
+```
+
+## 使い方
+
+現在のバージョンは Maven Central には公開していません。`mvn clean install` でローカルリポジトリにインストールしてから使用してください。
+
+Maven の依存関係:
+
+```xml
+<dependency>
+    <groupId>com.github.naofum</groupId>
+    <artifactId>xlsx2pdf4j</artifactId>
+    <version>0.1.0</version>
+</dependency>
+```
+
+Java:
+
+```java
+import com.github.naofum.xlsx2pdf4j.api.ConversionOptions;
+import com.github.naofum.xlsx2pdf4j.api.ConversionResult;
+import com.github.naofum.xlsx2pdf4j.api.TextLayerMode;
+import com.github.naofum.xlsx2pdf4j.api.Xlsx2Pdf;
+
+import java.nio.file.Path;
+
+ConversionResult result = Xlsx2Pdf.convert(
+        Path.of("input.xlsx"),
+        Path.of("output.pdf"),
+        ConversionOptions.builder()
+                .dpi(200)
+                .textLayerMode(TextLayerMode.INVISIBLE)
+                .build());
+
+System.out.println(result.pageCount());
+System.out.println(result.pagesBySheet());
+System.out.println(result.warnings());
+```
+
+### 主なオプション
+
+| オプション | 既定値 | 説明 |
+|---|---|---|
+| `dpi` | `200` | ページ画像の解像度。72〜600 |
+| `textLayerMode` | `INVISIBLE` | 不可視テキスト層。`NONE` で無効化 |
+| `fontScale` | `1.0` | セル・図形・ヘッダー・フッターのフォントサイズ倍率 |
+| `printScale` | `0.0` | 印刷倍率の上書き。`0` はワークブックの設定を使用 |
+| `strict` | `false` | 未対応要素で例外にする |
+| `sheets` | すべての表示シート | 変換対象シート名 |
+| `maxPages` | `200` | 最大ページ数 |
+| `maxOutputBytes` | 50 MiB | 最大出力サイズ |
+| `imageCompression` | `AUTO` | `PNG` / `JPEG` / `AUTO` |
+| `jpegQuality` | `0.9` | JPEG の品質 |
+| `pageNumberingMode` | `EXCEL_AUTOMATIC` | ヘッダー・フッターのページ番号モード |
+
+`strict` モードでは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`FONT_MISSING`、`FORMULA_NO_CACHE` が例外になります。`SHAPE_APPROXIMATED` と `PAGE_LIMIT` は警告のまま処理を継続します。
+
+## 対応機能
+
+### セル・テキスト
+
+- セル値、数値書式、フォント、塗り、罫線、結合セル
+- 結合セルの外周罫線、折り返し、縮小表示、文字のはみ出し
+- 文字回転（45° / 90° をセル中央に配置）
+- セルのグラデーション塗りつぶし（線形・path、複数ストップ、主題色・インデックス色、結合セル）
+- 塗り → 罫線 → テキストの3パス描画（隣接セルの塗りによる罫線欠落を防止）
+- ページ境界での罫線補完
+- セル内リッチテキスト
+- 縦書き（`eaVert` / `wordArtVertRtl`）の upright 文字・右→左の段組み
+
+### 印刷・ページ
+
+- 印刷範囲、用紙、余白、拡大縮小、fit-to-page、改ページ、印刷タイトル
+- 既定フォントの MDW に基づく列幅変換
+- Excel の PDF 出力に合わせた行高の描画スケール
+- ヘッダー、フッター、ページ番号
+- ページ番号モード（Excel 自動 / シート単位のユーザー指定）
+
+### 図形
+
+- 四角、角丸、楕円、線、矢印、曲線矢印、吹き出し、コネクタ、フローチャート、折れ角、ホームプレート、星、シール
+- 基本図形（多角形、ハート、雲、ギア、数式記号、フレーム、リボン、スクロールなど）
+- 角丸・切り欠き矩形
+- カスタムジオメトリ（`a:custGeom`）
+- グループ図形の再帰描画
+- 図形の影・グラデーション（近似）
+- 図形のテーマ色と線色
+- 図形内テキストの run 単位書式、段落単位配置、縦書き
+- 図形テキストの余白、垂直アンカー、`normAutofit`、`anchorCtr`、`spAutoFit`
+- 図形の定義済みテキスト領域
+- 単純線形状・コネクタの矢印（open arrow / triangle / stealth / diamond / oval）
+- 図形枠線の二重線（`a:ln cmpd="dbl"`）
+- コネクタの接続点、`flipH` / `flipV`、回転、`adj`
+- 図形の印刷可能領域へのクリップ
+
+### グラフ・画像
+
+- XChart によるグラフ描画（縦棒・横棒・折れ線・エリア・円・ドーナツ、複合グラフ、第2軸、系列色、凡例、軸・グリッド）
+- グラフは縦棒・横棒・折れ線・エリア・円・ドーナツに対応
+- 散布図・レーダー・バブル・株価・等高線・3D グラフと SmartArt は警告を出してスキップ
+- PNG / JPEG 画像
+
+### フォント・テキスト層
+
+- Noto Sans JP / Noto Serif JP の同梱とフォールバック
+- 日本語グリフを持たないフォント（Calibri 等）の自動フォールバック
+- 不可視テキスト層（検索・コピー用、クリップ文字もセル全文を保持）
+
+## 制約・未実装
+
+- 影・グラデーションは近似
+- セルの path グラデーションは放射状グラデーションで近似
+- セルの線形グラデーション角度はセルの縦横比で補正しない
+- EMF / WMF は対象外
+- 先頭ページ・偶数ページ別ヘッダー / フッターは対象外
+- `normAutofit` の自動縮小は近似
+- 図形枠線の `cmpd` は `dbl` のみ対応（`thickThin` / `thinThick` / `tri` は単線で近似）
+- 円形矢印はセグメント化したリングと三角形ヘッドで近似（`adj` 未対応）
+- `curvedLeftArrow` / `curvedRightArrow` の `adj` は未対応（既定形状で描画）
+- リボン・スクロールは主要輪郭の近似（折り返しの陰影は単色）
+- 図形テキストの段落前後スペーシング・箇条書き・インデントは未対応
+- 縦書きテキストの段落単位配置・`anchorCtr` は未対応
+- 未対応の図形は定義済みテキスト領域ではなく外接矩形で近似
+- `vert` / `vert270` の90度回転テキストは未対応
+- `curvedConnector2/3/4/5` の曲線コネクタは直線で近似
+- 散布図・レーダー・バブル・株価・等高線・3D グラフは `CHART_SKIPPED` 警告でスキップ
+- 横棒の積み上げ・パーセント積み上げ・第2軸・棒＋折れ線の複合グラフは未対応（`CHART_SKIPPED`）。横棒のカテゴリ順は Excel 既定（先頭カテゴリが下）に合わせる
+- グラフのデータラベル・トレンドライン・誤差範囲・補助線・表示単位・データポイント単位の書式は未対応
+- グラフのタイトル・軸ラベル・凡例・目盛りは画像としてのみ描画され、不可視テキスト層には含まれない
+- グラフの余白・フォントサイズ・目盛り間隔・色は XChart のレイアウトで近似（Excel のピクセル単位の配置とは一致しない）
+- 300 DPI の上限（200ページ / 50MB）は設定値として実装済みだが、大規模ファイルでの検証は未実施
+
+## テスト
+
+```powershell
+mvn test
+```
+
+### テストデータ
+
+- `testdata/validation/attributes.xlsx`: セル・テキスト・図形・画像・印刷属性の検証用ワークブック
+- `testdata/validation/unsupported-shapes.xlsx`: 外接矩形で近似されるプリセット図形のカタログ
+
+`attributes.xlsx` は 150 DPI で9ページ、次の5警告を出します。
+
+- `PAGE_LIMIT`（`99 Empty`）
+- `FORMULA_NO_CACHE`
+- `CHART_SKIPPED`
+- `IMAGE_UNSUPPORTED`
+- `SHAPE_APPROXIMATED`
+
+`unsupported-shapes.xlsx` は 100 DPI で2ページ、`SHAPE_APPROXIMATED` 警告を12件出します。
+
+再生成:
+
+```powershell
+mvn -q test-compile exec:java "-Dexec.classpathScope=test" "-Dexec.mainClass=com.github.naofum.xlsx2pdf4j.ValidationWorkbookGenerator"
+mvn -q test-compile exec:java "-Dexec.classpathScope=test" "-Dexec.mainClass=com.github.naofum.xlsx2pdf4j.UnsupportedShapesWorkbookGenerator"
+```
+
+### golden PDF
+
+`testdata/golden/attributes.pdf` と `testdata/golden/unsupported-shapes.pdf` は、Excel 16（Windows）で各ワークブックの全シートを PDF 出力した参照 PDF です。
+
+```powershell
+mvn -Dtest=GoldenPdfComparisonTest test
+```
+
+- 出力先: `target/golden-diff/attributes/`, `target/golden-diff/unsupported-shapes/`
+- 各ページ: `page-NN-diff.png`
+  - 左: 実装の出力
+  - 中央: Excel の参照 PDF
+  - 右: 差分（4倍に増幅、赤いほど差が大きい）
+- `summary.txt`: ページごとの平均画像差と、差の大きいページの一覧
+
+差分画像が不要な場合:
+
+```powershell
+mvn -Dtest=GoldenPdfComparisonTest "-Dxlsx2pdf4j.diffImages=false" test
+```
+
+golden は Excel のバージョン、プリンタードライバー、フォント環境に依存します。再生成した場合はページ数と差分を確認してください。
+
+## ライセンス
+
+Apache License, Version 2.0 です。詳細は [LICENSE](LICENSE) を参照してください。
+
+同梱の Noto Sans JP / Noto Serif JP は SIL Open Font License 1.1 で提供されています。ライセンス全文は `src/main/resources/fonts/` に含まれています。
