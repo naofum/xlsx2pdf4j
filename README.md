@@ -1,8 +1,8 @@
 # xlsx2pdf4j
 
-Excel（`.xlsx` / `.xlsm`）を Office / LibreOffice に依存せず PDF に変換する Java ライブラリです。
+Excel（`.xlsx` / `.xlsm`）と PowerPoint（`.pptx` / `.pptm`）を Office / LibreOffice に依存せず PDF に変換する Java ライブラリです。
 
-- 入力: `.xlsx` / `.xlsm`（マクロは無視）
+- 入力: `.xlsx` / `.xlsm` / `.pptx` / `.pptm`（マクロは無視）
 - 出力: ページ単位のラスタ画像を埋め込んだ PDF
 - 描画: Apache POI + Java2D + Apache PDFBox + XChart
 - 見た目はページ画像、検索・コピー用の不可視テキスト層を付与
@@ -51,6 +51,22 @@ System.out.println(result.pagesBySheet());
 System.out.println(result.warnings());
 ```
 
+PowerPoint:
+
+```java
+import com.github.naofum.xlsx2pdf4j.api.ConversionOptions;
+import com.github.naofum.xlsx2pdf4j.api.Pptx2Pdf;
+
+Pptx2Pdf.convert(
+        Path.of("slides.pptx"),
+        Path.of("slides.pdf"),
+        ConversionOptions.builder()
+                .dpi(200)
+                .build());
+```
+
+PPTX の `pagesBySheet()` は `Slide 1`、`Slide 2` … のキーになります。`sheets` にスライド番号（1始まり）またはスライドタイトルを指定すると、そのスライドだけを変換できます。非表示スライドは、明示的に選択した場合だけ変換されます。
+
 ### 主なオプション
 
 | オプション | 既定値 | 説明 |
@@ -67,7 +83,9 @@ System.out.println(result.warnings());
 | `jpegQuality` | `0.9` | JPEG の品質 |
 | `pageNumberingMode` | `EXCEL_AUTOMATIC` | ヘッダー・フッターのページ番号モード |
 
-`strict` モードでは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`FONT_MISSING`、`FORMULA_NO_CACHE` が例外になります。`SHAPE_APPROXIMATED` と `PAGE_LIMIT` は警告のまま処理を継続します。
+PPTX では `dpi`、`textLayerMode`、`imageCompression`、`jpegQuality`、`maxPages`、`maxOutputBytes`、`strict`、`sheets` が有効です。`fontScale`、`printScale`、`pageNumberingMode` は PPTX には適用されません。
+
+`strict` モードでは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`FONT_MISSING`、`FORMULA_NO_CACHE` が例外になります。`SHAPE_APPROXIMATED` と `PAGE_LIMIT` は警告のまま処理を継続します。PPTX では `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`CHART_SKIPPED`、`SMART_ART_SKIPPED` が例外になります。
 
 ## 対応機能
 
@@ -114,6 +132,16 @@ System.out.println(result.warnings());
 - 散布図・レーダー・バブル・株価・等高線・3D グラフと SmartArt は警告を出してスキップ
 - PNG / JPEG 画像
 
+### PowerPoint
+
+- `.pptx` / `.pptm` のスライドをページ画像として PDF 化
+- スライドマスター、レイアウト、背景、スライド番号、日付プレースホルダー
+- テキスト、箇条書き、段落、オートシェイプ、コネクタ、グループ、画像、表
+- グラフは XChart で上書き描画（縦棒・横棒・折れ線・エリア・円・ドーナツ）
+- テーマフォントは同梱の Noto Sans JP に正規化
+- 不可視テキスト層（検索・コピー用、位置は近似）
+- 非表示スライドのスキップ、スライド番号・タイトルによる選択
+
 ### フォント・テキスト層
 
 - Noto Sans JP / Noto Serif JP の同梱とフォールバック
@@ -144,6 +172,16 @@ System.out.println(result.warnings());
 - グラフの余白・フォントサイズ・目盛り間隔・色は XChart のレイアウトで近似（Excel のピクセル単位の配置とは一致しない）
 - 300 DPI の上限（200ページ / 50MB）は設定値として実装済みだが、大規模ファイルでの検証は未実施
 
+### PowerPoint
+
+- SmartArt、3D 図形、EMF/WMF、動画・音声、アニメーション・画面切り替えは未対応または描画できない場合がある
+- テキストの太字・斜体・プレースホルダー継承は、PowerPoint の表示と完全には一致しない場合がある
+- フォントは同梱の Noto に正規化するため、元のフォントと字幅・見た目が変わる場合がある
+- PPTX の不可視テキスト層は図形の位置からの近似で、行単位の正確な配置ではない
+- 表・グループ内のテキストは不可視テキスト層に含まれない場合がある
+- `fontScale`、`printScale`、`pageNumberingMode` は PPTX には適用されない
+- 表・画像・グループは POI の描画に依存するため、複雑な表や効果は近似になる場合がある
+
 ## テスト
 
 ```powershell
@@ -165,6 +203,14 @@ mvn test
 
 `unsupported-shapes.xlsx` は 100 DPI で2ページ、`SHAPE_APPROXIMATED` 警告を12件出します。
 
+PowerPoint:
+
+- `testdata/validation/sample1.pptx`: タイトル・本文プレースホルダー
+- `testdata/validation/sample2.pptx`: 角丸図形・コネクタ・テキストボックス
+- `testdata/validation/sample3.pptx`: 角丸図形・矢印コネクタ・テキストボックス
+
+各1スライド、16:9（960×540pt）です。`PptxConversionTest` が変換、ページ数、テキスト層、非表示スライドの扱いを確認します。
+
 再生成:
 
 ```powershell
@@ -176,14 +222,17 @@ mvn -q test-compile exec:java "-Dexec.classpathScope=test" "-Dexec.mainClass=com
 
 `testdata/golden/attributes.pdf` と `testdata/golden/unsupported-shapes.pdf` は、Excel 16（Windows）で各ワークブックの全シートを PDF 出力した参照 PDF です。
 
+`testdata/golden/sample1.pdf`、`sample2.pdf`、`sample3.pdf` は、PowerPoint 16（Windows）で各プレゼンテーションを PDF 出力した参照 PDF です。メタデータはコミット前に除去しています。
+
 ```powershell
 mvn -Dtest=GoldenPdfComparisonTest test
+mvn -Dtest=PptxGoldenPdfComparisonTest test
 ```
 
-- 出力先: `target/golden-diff/attributes/`, `target/golden-diff/unsupported-shapes/`
+- 出力先: `target/golden-diff/attributes/`, `target/golden-diff/unsupported-shapes/`, `target/golden-diff/pptx-sample1/`, `target/golden-diff/pptx-sample2/`, `target/golden-diff/pptx-sample3/`
 - 各ページ: `page-NN-diff.png`
   - 左: 実装の出力
-  - 中央: Excel の参照 PDF
+  - 中央: Excel / PowerPoint の参照 PDF
   - 右: 差分（4倍に増幅、赤いほど差が大きい）
 - `summary.txt`: ページごとの平均画像差と、差の大きいページの一覧
 
@@ -191,9 +240,10 @@ mvn -Dtest=GoldenPdfComparisonTest test
 
 ```powershell
 mvn -Dtest=GoldenPdfComparisonTest "-Dxlsx2pdf4j.diffImages=false" test
+mvn -Dtest=PptxGoldenPdfComparisonTest "-Dxlsx2pdf4j.diffImages=false" test
 ```
 
-golden は Excel のバージョン、プリンタードライバー、フォント環境に依存します。再生成した場合はページ数と差分を確認してください。
+golden は Excel / PowerPoint のバージョン、プリンタードライバー、フォント環境に依存します。再生成した場合はページ数と差分を確認してください。
 
 ## ライセンス
 

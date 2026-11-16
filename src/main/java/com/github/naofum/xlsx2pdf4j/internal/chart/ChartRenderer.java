@@ -19,14 +19,14 @@ package com.github.naofum.xlsx2pdf4j.internal.chart;
 import com.github.naofum.xlsx2pdf4j.internal.FontResolver;
 import com.github.naofum.xlsx2pdf4j.internal.PlacedText;
 import com.github.naofum.xlsx2pdf4j.internal.drawingml.DrawingTheme;
-import org.apache.poi.xssf.usermodel.XSSFChart;
+import org.apache.poi.xddf.usermodel.chart.XDDFChart;
 
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
 
 /**
- * Entry point for drawing a spreadsheet chart onto a page.
+ * Entry point for drawing a spreadsheet or presentation chart onto a page.
  */
 public final class ChartRenderer {
 
@@ -36,7 +36,7 @@ public final class ChartRenderer {
         this.fonts = fonts;
     }
 
-    public boolean draw(Graphics2D g2, XSSFChart chart, Rectangle2D frame,
+    public boolean draw(Graphics2D g2, XDDFChart chart, Rectangle2D frame,
                         DrawingTheme theme, List<PlacedText> textLayer) {
         ChartSpec spec = XlsxChartReader.read(chart, theme);
         if (spec == null) {

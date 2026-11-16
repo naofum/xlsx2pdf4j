@@ -38,7 +38,9 @@ import org.apache.poi.xddf.usermodel.chart.XDDFNumericalDataSource;
 import org.apache.poi.xddf.usermodel.chart.XDDFPieChartData;
 import org.apache.poi.xddf.usermodel.chart.XDDFScatterChartData;
 import org.apache.poi.xddf.usermodel.chart.XDDFValueAxis;
-import org.apache.poi.xssf.usermodel.XSSFChart;
+import org.apache.poi.xddf.usermodel.chart.XDDFChart;
+import org.apache.poi.xddf.usermodel.chart.XDDFTitle;
+import org.apache.poi.xddf.usermodel.text.XDDFTextParagraph;
 import org.openxmlformats.schemas.drawingml.x2006.chart.CTSerTx;
 
 import java.awt.Color;
@@ -50,14 +52,15 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Reads an {@link XSSFChart} into the format-neutral chart model.
+ * Reads an {@link XDDFChart} (spreadsheet or presentation) into the
+ * format-neutral chart model.
  */
 public final class XlsxChartReader {
 
     private XlsxChartReader() {
     }
 
-    public static ChartSpec read(XSSFChart chart, DrawingTheme theme) {
+    public static ChartSpec read(XDDFChart chart, DrawingTheme theme) {
         if (chart == null) {
             return null;
         }
@@ -136,7 +139,7 @@ public final class XlsxChartReader {
                 legendPosition = position.name().toLowerCase(Locale.ROOT);
             }
         }
-        String title = chart.getTitleText() == null ? null : chart.getTitleText().getString();
+        String title = titleText(chart);
         double firstSliceAngle = 0;
         double holeSize = 0;
         for (XDDFChartData group : groups) {
@@ -155,6 +158,22 @@ public final class XlsxChartReader {
         return new ChartSpec(chartKind, title, legendVisible, legendPosition, series,
                 categoryAxis, categoryReversed, axisModels, horizontal, stacked, percentStacked,
                 firstSliceAngle, holeSize);
+    }
+
+    private static String titleText(XDDFChart chart) {
+        try {
+            XDDFTitle title = chart.getTitle();
+            if (title == null || title.getBody() == null) {
+                return null;
+            }
+            StringBuilder text = new StringBuilder();
+            for (XDDFTextParagraph paragraph : title.getBody().getParagraphs()) {
+                text.append(paragraph.getText());
+            }
+            return text.length() == 0 ? null : text.toString();
+        } catch (RuntimeException ignored) {
+            return null;
+        }
     }
 
     private static ChartSeries convertSeries(XDDFChartData.Series series, ChartKind kind,
