@@ -6,11 +6,11 @@
 
     <groupId>com.github.naofum</groupId>
     <artifactId>xlsx2pdf4j</artifactId>
-    <version>0.1.0</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>xlsx2pdf4j</name>
-    <description>Excel (.xlsx) to PDF conversion library for Java without office suites</description>
+    <description>Excel and PowerPoint to PDF conversion library for Java without office suites</description>
     <url>https://github.com/naofum/xlsx2pdf4j</url>
 
     <licenses>

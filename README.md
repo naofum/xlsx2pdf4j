@@ -14,18 +14,43 @@ Excel（`.xlsx` / `.xlsm`）と PowerPoint（`.pptx` / `.pptm`）を Office / Li
 mvn clean install
 ```
 
+GitHub Actions では Windows 上の全テストと、Linux 上のコンパイル・パッケージを確認します。
+
 ## 使い方
 
-現在のバージョンは Maven Central には公開していません。`mvn clean install` でローカルリポジトリにインストールしてから使用してください。
+JitPack から取得できます。Maven Central には公開していません。
 
-Maven の依存関係:
+Maven のリポジトリ設定:
+
+```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+```
+
+依存関係:
 
 ```xml
 <dependency>
     <groupId>com.github.naofum</groupId>
     <artifactId>xlsx2pdf4j</artifactId>
-    <version>0.1.0</version>
+    <version>v1.0.0</version>
 </dependency>
+```
+
+Gradle:
+
+```groovy
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'com.github.naofum:xlsx2pdf4j:v1.0.0'
+}
 ```
 
 Java:

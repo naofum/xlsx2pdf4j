@@ -15,7 +15,9 @@
  */
 package com.github.naofum.xlsx2pdf4j;
 
+import com.github.naofum.xlsx2pdf4j.api.ErrorCode;
 import com.github.naofum.xlsx2pdf4j.api.Pptx2Pdf;
+import com.github.naofum.xlsx2pdf4j.api.Pptx2PdfException;
 import com.github.naofum.xlsx2pdf4j.api.PptxConversionOptions;
 import com.github.naofum.xlsx2pdf4j.api.PptxConversionResult;
 import org.apache.pdfbox.Loader;
@@ -31,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PptxConversionTest {
 
@@ -70,6 +73,27 @@ class PptxConversionTest {
                 assertThat(text).contains(expected[i]);
             }
         }
+    }
+
+    @Test
+    void rejectsUnsupportedInputFormat() {
+        assertThatThrownBy(() -> Pptx2Pdf.convert(
+                Path.of("README.md"),
+                Path.of("target", "pptx", "invalid.pdf")))
+                .isInstanceOf(Pptx2PdfException.class)
+                .extracting(e -> ((Pptx2PdfException) e).code())
+                .isEqualTo(ErrorCode.INPUT_FORMAT);
+    }
+
+    @Test
+    void enforcesSlideLimit() {
+        assertThatThrownBy(() -> Pptx2Pdf.convert(
+                Path.of("testdata", "validation", "sample2.pptx"),
+                Path.of("target", "pptx", "limit.pdf"),
+                PptxConversionOptions.builder().maxSlides(1).build()))
+                .isInstanceOf(Pptx2PdfException.class)
+                .extracting(e -> ((Pptx2PdfException) e).code())
+                .isEqualTo(ErrorCode.LIMIT_EXCEEDED);
     }
 
     @Test
