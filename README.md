@@ -11,10 +11,10 @@ Excel（`.xlsx` / `.xlsm`）、PowerPoint（`.pptx` / `.pptm`）、Word（`.docx
 ## ビルド
 
 ```powershell
-mvn clean install
+.\mvnw.cmd clean install
 ```
 
-GitHub Actions では Windows 上の全テストと、Linux 上のコンパイル・パッケージを確認します。
+GitHub Actions では Windows 上の全テストと、Linux 上のコンパイル・パッケージを確認します。Maven Wrapperを同梱しているため、Maven 3.6.3未満の環境でもビルドできます。Linux / macOSでは `./mvnw clean install` を使用してください。
 
 ## 使い方
 
@@ -37,7 +37,7 @@ Maven のリポジトリ設定:
 <dependency>
     <groupId>com.github.naofum</groupId>
     <artifactId>xlsx2pdf4j</artifactId>
-    <version>v1.1.0</version>
+    <version>v1.1.1</version>
 </dependency>
 ```
 
@@ -49,11 +49,11 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.naofum:xlsx2pdf4j:v1.1.0'
+    implementation 'com.github.naofum:xlsx2pdf4j:v1.1.1'
 }
 ```
 
-DOCX対応を含む `v1.1.0` は、タグ作成後にJitPackから取得できます。
+DOCX対応を含む `v1.1.1` は、タグ作成後にJitPackから取得できます。JitPackのMavenを3.9.11に固定するため、Maven Wrapperを同梱しています。
 
 Java:
 
