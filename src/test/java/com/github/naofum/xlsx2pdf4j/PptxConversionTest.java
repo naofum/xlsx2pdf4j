@@ -15,9 +15,9 @@
  */
 package com.github.naofum.xlsx2pdf4j;
 
-import com.github.naofum.xlsx2pdf4j.api.ConversionOptions;
-import com.github.naofum.xlsx2pdf4j.api.ConversionResult;
 import com.github.naofum.xlsx2pdf4j.api.Pptx2Pdf;
+import com.github.naofum.xlsx2pdf4j.api.PptxConversionOptions;
+import com.github.naofum.xlsx2pdf4j.api.PptxConversionResult;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -42,13 +42,13 @@ class PptxConversionTest {
         int[] expectedPages = {1, 3, 1};
         for (int i = 0; i < names.length; i++) {
             String name = names[i];
-            ConversionResult result = Pptx2Pdf.convert(
+            PptxConversionResult result = Pptx2Pdf.convert(
                     Path.of("testdata", "validation", name + ".pptx"),
                     outputDir.resolve(name + ".pdf"),
-                    ConversionOptions.builder().dpi(150).build());
+                    PptxConversionOptions.builder().dpi(150).build());
 
-            assertThat(result.pageCount()).isEqualTo(expectedPages[i]);
-            assertThat(result.pagesBySheet()).hasSize(expectedPages[i]);
+            assertThat(result.slideCount()).isEqualTo(expectedPages[i]);
+            assertThat(result.slideNumbers()).hasSize(expectedPages[i]);
             assertThat(result.warnings()).isEmpty();
             assertThat(result.output()).exists();
             assertThat(result.outputSize()).isLessThan(50L * 1024 * 1024);
@@ -64,7 +64,7 @@ class PptxConversionTest {
         for (int i = 0; i < names.length; i++) {
             Path pdf = outputDir.resolve(names[i] + "-text.pdf");
             Pptx2Pdf.convert(Path.of("testdata", "validation", names[i] + ".pptx"), pdf,
-                    ConversionOptions.builder().dpi(100).build());
+                    PptxConversionOptions.builder().dpi(100).build());
             try (PDDocument document = Loader.loadPDF(pdf.toFile())) {
                 String text = new PDFTextStripper().getText(document);
                 assertThat(text).contains(expected[i]);
@@ -91,14 +91,16 @@ class PptxConversionTest {
             }
         }
 
-        ConversionResult visible = Pptx2Pdf.convert(workbook,
+        PptxConversionResult visible = Pptx2Pdf.convert(workbook,
                 Path.of("target", "pptx", "two-slides-visible.pdf"),
-                ConversionOptions.builder().dpi(100).build());
-        assertThat(visible.pageCount()).isEqualTo(1);
+                PptxConversionOptions.builder().dpi(100).build());
+        assertThat(visible.slideCount()).isEqualTo(1);
+        assertThat(visible.slideNumbers()).containsExactly(1);
 
-        ConversionResult selected = Pptx2Pdf.convert(workbook,
+        PptxConversionResult selected = Pptx2Pdf.convert(workbook,
                 Path.of("target", "pptx", "two-slides-selected.pdf"),
-                ConversionOptions.builder().dpi(100).sheet("2").build());
-        assertThat(selected.pageCount()).isEqualTo(1);
+                PptxConversionOptions.builder().dpi(100).slide(2).build());
+        assertThat(selected.slideCount()).isEqualTo(1);
+        assertThat(selected.slideNumbers()).containsExactly(2);
     }
 }

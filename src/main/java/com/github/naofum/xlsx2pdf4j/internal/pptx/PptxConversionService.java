@@ -16,11 +16,12 @@
 
 package com.github.naofum.xlsx2pdf4j.internal.pptx;
 
-import com.github.naofum.xlsx2pdf4j.api.ConversionOptions;
-import com.github.naofum.xlsx2pdf4j.api.ConversionResult;
 import com.github.naofum.xlsx2pdf4j.api.ConversionWarning;
 import com.github.naofum.xlsx2pdf4j.api.ErrorCode;
 import com.github.naofum.xlsx2pdf4j.api.ImageCompression;
+import com.github.naofum.xlsx2pdf4j.api.Pptx2PdfException;
+import com.github.naofum.xlsx2pdf4j.api.PptxConversionOptions;
+import com.github.naofum.xlsx2pdf4j.api.PptxConversionResult;
 import com.github.naofum.xlsx2pdf4j.api.TextLayerMode;
 import com.github.naofum.xlsx2pdf4j.api.WarningCode;
 import com.github.naofum.xlsx2pdf4j.api.Xlsx2PdfException;
@@ -60,12 +61,12 @@ public final class PptxConversionService {
     private static final Logger LOG = LoggerFactory.getLogger(PptxConversionService.class);
     private static final long MAX_INPUT_BYTES = 100L * 1024 * 1024;
 
-    public ConversionResult convert(Path input, Path output, ConversionOptions options)
-            throws Xlsx2PdfException {
+    public PptxConversionResult convert(Path input, Path output, PptxConversionOptions options)
+            throws Pptx2PdfException {
         Instant started = Instant.now();
         validateInput(input);
         if (output == null) {
-            throw new Xlsx2PdfException(ErrorCode.OUTPUT_IO, "output path is null");
+            throw new Pptx2PdfException(ErrorCode.OUTPUT_IO, "output path is null");
         }
         preparePoiSecurity();
 
@@ -73,14 +74,14 @@ public final class PptxConversionService {
         Path absoluteOutput = output.toAbsolutePath();
         try (OPCPackage pkg = OPCPackage.open(input.toFile(), PackageAccess.READ);
              XMLSlideShow presentation = new XMLSlideShow(pkg)) {
-            List<XSLFSlide> slides = selectSlides(presentation, options);
-            if (slides.isEmpty()) {
-                throw new Xlsx2PdfException(ErrorCode.INPUT_FORMAT,
+            Map<Integer, XSLFSlide> selected = selectSlides(presentation, options);
+            if (selected.isEmpty()) {
+                throw new Pptx2PdfException(ErrorCode.INPUT_FORMAT,
                         "no printable slides were selected");
             }
-            if (slides.size() > options.maxPages()) {
-                throw new Xlsx2PdfException(ErrorCode.LIMIT_EXCEEDED,
-                        "slide count " + slides.size() + " exceeds limit " + options.maxPages());
+            if (selected.size() > options.maxSlides()) {
+                throw new Pptx2PdfException(ErrorCode.LIMIT_EXCEEDED,
+                        "slide count " + selected.size() + " exceeds limit " + options.maxSlides());
             }
 
             PptxFontNormalizer.normalize(presentation);
@@ -92,9 +93,7 @@ public final class PptxConversionService {
 
             try (PdfWriter pdf = new PdfWriter(absoluteOutput, options.maxOutputBytes(),
                     compression, options.jpegQuality())) {
-                Map<String, Integer> pagesBySheet = new LinkedHashMap<>();
-                int pageNumber = 1;
-                for (XSLFSlide slide : slides) {
+                for (XSLFSlide slide : selected.values()) {
                     List<PlacedText> textLayer = options.textLayerMode() == TextLayerMode.INVISIBLE
                             ? new ArrayList<>() : null;
                     BufferedImage image = PptxSlideRenderer.render(presentation, slide,
@@ -102,51 +101,50 @@ public final class PptxConversionService {
                     checkStrict(options, warnings);
                     pdf.addPage(image, pageSize.getWidth(), pageSize.getHeight(), textLayer);
                     image.flush();
-                    pagesBySheet.put("Slide " + pageNumber, 1);
-                    pageNumber++;
                 }
                 pdf.finish(fileName);
                 long size = Files.size(absoluteOutput);
-                LOG.info("converted {} slides, {} bytes", slides.size(), size);
-                return new ConversionResult(absoluteOutput, slides.size(), pagesBySheet, warnings,
+                LOG.info("converted {} slides, {} bytes", selected.size(), size);
+                return new PptxConversionResult(absoluteOutput,
+                        new ArrayList<>(selected.keySet()), warnings,
                         Duration.between(started, Instant.now()), size);
             }
-        } catch (Xlsx2PdfException e) {
+        } catch (Pptx2PdfException e) {
             throw e;
+        } catch (Xlsx2PdfException e) {
+            throw new Pptx2PdfException(e.code(), e.getMessage(), e);
         } catch (EncryptedDocumentException e) {
-            throw new Xlsx2PdfException(ErrorCode.INPUT_ENCRYPTED,
+            throw new Pptx2PdfException(ErrorCode.INPUT_ENCRYPTED,
                     "the presentation is encrypted", e);
         } catch (InvalidFormatException e) {
-            throw new Xlsx2PdfException(ErrorCode.INPUT_FORMAT,
+            throw new Pptx2PdfException(ErrorCode.INPUT_FORMAT,
                     "invalid .pptx package", e);
         } catch (IOException e) {
-            throw new Xlsx2PdfException(ErrorCode.INPUT_CORRUPT,
+            throw new Pptx2PdfException(ErrorCode.INPUT_CORRUPT,
                     "cannot read presentation", e);
         } catch (RuntimeException e) {
-            throw new Xlsx2PdfException(ErrorCode.INTERNAL,
+            throw new Pptx2PdfException(ErrorCode.INTERNAL,
                     "unexpected presentation conversion error", e);
         }
     }
 
-    private List<XSLFSlide> selectSlides(XMLSlideShow presentation, ConversionOptions options) {
-        Set<String> requested = options.sheets();
-        List<XSLFSlide> slides = new ArrayList<>();
+    private Map<Integer, XSLFSlide> selectSlides(XMLSlideShow presentation,
+                                                 PptxConversionOptions options) {
+        Set<Integer> requested = options.slides();
+        Map<Integer, XSLFSlide> slides = new LinkedHashMap<>();
         int index = 1;
         for (XSLFSlide slide : presentation.getSlides()) {
-            boolean selected = requested.isEmpty()
-                    || requested.contains(Integer.toString(index))
-                    || requested.contains("Slide " + index)
-                    || (slide.getTitle() != null && requested.contains(slide.getTitle()));
+            boolean selected = requested.isEmpty() || requested.contains(index);
             if (selected && (!slide.isHidden() || !requested.isEmpty())) {
-                slides.add(slide);
+                slides.put(index, slide);
             }
             index++;
         }
         return slides;
     }
 
-    private void checkStrict(ConversionOptions options, List<ConversionWarning> warnings)
-            throws Xlsx2PdfException {
+    private void checkStrict(PptxConversionOptions options, List<ConversionWarning> warnings)
+            throws Pptx2PdfException {
         if (!options.strict()) {
             return;
         }
@@ -155,41 +153,41 @@ public final class PptxConversionService {
                     || warning.code() == WarningCode.IMAGE_UNSUPPORTED
                     || warning.code() == WarningCode.CHART_SKIPPED
                     || warning.code() == WarningCode.SMART_ART_SKIPPED) {
-                throw new Xlsx2PdfException(ErrorCode.UNSUPPORTED,
+                throw new Pptx2PdfException(ErrorCode.UNSUPPORTED,
                         "strict mode: " + warning.message(),
                         warning.sheetName(), warning.location());
             }
         }
     }
 
-    private ImageCompression effectiveImageCompression(ConversionOptions options) {
+    private ImageCompression effectiveImageCompression(PptxConversionOptions options) {
         if (options.imageCompression() == ImageCompression.AUTO && options.dpi() >= 300) {
             return ImageCompression.JPEG;
         }
         return options.imageCompression();
     }
 
-    private void validateInput(Path input) throws Xlsx2PdfException {
+    private void validateInput(Path input) throws Pptx2PdfException {
         if (input == null) {
-            throw new Xlsx2PdfException(ErrorCode.INPUT_NOT_FOUND, "input path is null");
+            throw new Pptx2PdfException(ErrorCode.INPUT_NOT_FOUND, "input path is null");
         }
         if (!Files.isRegularFile(input)) {
-            throw new Xlsx2PdfException(ErrorCode.INPUT_NOT_FOUND,
+            throw new Pptx2PdfException(ErrorCode.INPUT_NOT_FOUND,
                     "input file not found: " + input);
         }
         String name = input.getFileName() == null
                 ? "" : input.getFileName().toString().toLowerCase(Locale.ROOT);
         if (!name.endsWith(".pptx") && !name.endsWith(".pptm")) {
-            throw new Xlsx2PdfException(ErrorCode.INPUT_FORMAT,
+            throw new Pptx2PdfException(ErrorCode.INPUT_FORMAT,
                     "only .pptx/.pptm is supported: " + input);
         }
         try {
             if (Files.size(input) > MAX_INPUT_BYTES) {
-                throw new Xlsx2PdfException(ErrorCode.LIMIT_EXCEEDED,
+                throw new Pptx2PdfException(ErrorCode.LIMIT_EXCEEDED,
                         "input file is larger than 100MB: " + input);
             }
         } catch (IOException e) {
-            throw new Xlsx2PdfException(ErrorCode.INPUT_NOT_FOUND,
+            throw new Pptx2PdfException(ErrorCode.INPUT_NOT_FOUND,
                     "cannot stat input file", e);
         }
     }

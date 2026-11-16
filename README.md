@@ -54,20 +54,25 @@ System.out.println(result.warnings());
 PowerPoint:
 
 ```java
-import com.github.naofum.xlsx2pdf4j.api.ConversionOptions;
 import com.github.naofum.xlsx2pdf4j.api.Pptx2Pdf;
+import com.github.naofum.xlsx2pdf4j.api.PptxConversionOptions;
+import com.github.naofum.xlsx2pdf4j.api.PptxConversionResult;
 
-Pptx2Pdf.convert(
+PptxConversionResult result = Pptx2Pdf.convert(
         Path.of("slides.pptx"),
         Path.of("slides.pdf"),
-        ConversionOptions.builder()
+        PptxConversionOptions.builder()
                 .dpi(200)
                 .build());
+
+System.out.println(result.slideCount());
+System.out.println(result.slideNumbers());
+System.out.println(result.warnings());
 ```
 
-PPTX の `pagesBySheet()` は `Slide 1`、`Slide 2` … のキーになります。`sheets` にスライド番号（1始まり）またはスライドタイトルを指定すると、そのスライドだけを変換できます。非表示スライドは、明示的に選択した場合だけ変換されます。
+`slides(2, 4)` または `slide(2)` で1始まりのスライド番号を指定できます。非表示スライドは、明示的に選択した場合だけ変換されます。PPTXの失敗は `Pptx2PdfException` で通知されます。
 
-### 主なオプション
+### Excel の主なオプション（`ConversionOptions`）
 
 | オプション | 既定値 | 説明 |
 |---|---|---|
@@ -83,9 +88,20 @@ PPTX の `pagesBySheet()` は `Slide 1`、`Slide 2` … のキーになります
 | `jpegQuality` | `0.9` | JPEG の品質 |
 | `pageNumberingMode` | `EXCEL_AUTOMATIC` | ヘッダー・フッターのページ番号モード |
 
-PPTX では `dpi`、`textLayerMode`、`imageCompression`、`jpegQuality`、`maxPages`、`maxOutputBytes`、`strict`、`sheets` が有効です。`fontScale`、`printScale`、`pageNumberingMode` は PPTX には適用されません。
+### PowerPoint の主なオプション（`PptxConversionOptions`）
 
-`strict` モードでは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`FONT_MISSING`、`FORMULA_NO_CACHE` が例外になります。`SHAPE_APPROXIMATED` と `PAGE_LIMIT` は警告のまま処理を継続します。PPTX では `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`CHART_SKIPPED`、`SMART_ART_SKIPPED` が例外になります。
+| オプション | 既定値 | 説明 |
+|---|---|---|
+| `dpi` | `200` | スライド画像の解像度。72〜600 |
+| `textLayerMode` | `INVISIBLE` | 不可視テキスト層。`NONE` で無効化 |
+| `imageCompression` | `AUTO` | `PNG` / `JPEG` / `AUTO` |
+| `jpegQuality` | `0.9` | JPEG の品質 |
+| `maxSlides` | `200` | 最大スライド数 |
+| `maxOutputBytes` | 50 MiB | 最大出力サイズ |
+| `strict` | `false` | 未対応要素で例外にする |
+| `slides` | すべての表示スライド | 変換対象スライド番号（1始まり） |
+
+`strict` モードでは、Excelは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`FONT_MISSING`、`FORMULA_NO_CACHE` が例外になります。`SHAPE_APPROXIMATED` と `PAGE_LIMIT` は警告のまま処理を継続します。PowerPointは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`CHART_SKIPPED`、`SMART_ART_SKIPPED` が例外になります。
 
 ## 対応機能
 
@@ -181,7 +197,6 @@ PPTX では `dpi`、`textLayerMode`、`imageCompression`、`jpegQuality`、`maxP
 - 表・グループ内のテキストは不可視テキスト層に含まれない場合がある
 - 表の罫線・表スタイルは完全には再現されない場合がある
 - グラフの軸ラベル・余白・凡例位置は XChart のレイアウトで近似される
-- `fontScale`、`printScale`、`pageNumberingMode` は PPTX には適用されない
 - 表・画像・グループは POI の描画に依存するため、複雑な表や効果は近似になる場合がある
 
 ## テスト

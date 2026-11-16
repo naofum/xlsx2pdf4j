@@ -22,25 +22,20 @@ import java.nio.file.Path;
 
 /**
  * Public entry point for PowerPoint (.pptx/.pptm) to PDF conversion.
- *
- * <p>The common {@link ConversionOptions} are used as follows: {@code dpi},
- * {@code textLayerMode}, {@code imageCompression}, {@code jpegQuality},
- * {@code maxPages}, {@code maxOutputBytes} and {@code strict} apply.
- * {@code sheets} selects slides by 1-based number or slide title. Excel-only
- * options such as {@code printScale} and {@code pageNumberingMode} are
- * ignored.</p>
  */
 public final class Pptx2Pdf {
 
     private Pptx2Pdf() {
     }
 
-    public static ConversionResult convert(Path input, Path output) throws Xlsx2PdfException {
-        return convert(input, output, ConversionOptions.defaults());
+    public static PptxConversionResult convert(Path input, Path output)
+            throws Pptx2PdfException {
+        return convert(input, output, PptxConversionOptions.defaults());
     }
 
-    public static ConversionResult convert(Path input, Path output,
-                                           ConversionOptions options) throws Xlsx2PdfException {
+    public static PptxConversionResult convert(Path input, Path output,
+                                               PptxConversionOptions options)
+            throws Pptx2PdfException {
         return new PptxConversionService().convert(input, output, options);
     }
 }

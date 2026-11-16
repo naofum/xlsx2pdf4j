@@ -15,8 +15,8 @@
  */
 package com.github.naofum.xlsx2pdf4j;
 
-import com.github.naofum.xlsx2pdf4j.api.ConversionOptions;
 import com.github.naofum.xlsx2pdf4j.api.Pptx2Pdf;
+import com.github.naofum.xlsx2pdf4j.api.PptxConversionOptions;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
@@ -62,7 +62,7 @@ class PptxGoldenPdfComparisonTest {
         Files.createDirectories(candidatePath.getParent());
 
         Pptx2Pdf.convert(workbook, candidatePath,
-                ConversionOptions.builder().dpi(150).build());
+                PptxConversionOptions.builder().dpi(150).build());
 
         assertThat(candidatePath).exists();
         assertThat(goldenPath).exists();
