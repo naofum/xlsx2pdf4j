@@ -1,8 +1,8 @@
 # xlsx2pdf4j
 
-Excel（`.xlsx` / `.xlsm`）と PowerPoint（`.pptx` / `.pptm`）を Office / LibreOffice に依存せず PDF に変換する Java ライブラリです。
+Excel（`.xlsx` / `.xlsm`）、PowerPoint（`.pptx` / `.pptm`）、Word（`.docx` / `.docm`）を Office / LibreOffice に依存せず PDF に変換する Java ライブラリです。
 
-- 入力: `.xlsx` / `.xlsm` / `.pptx` / `.pptm`（マクロは無視）
+- 入力: `.xlsx` / `.xlsm` / `.pptx` / `.pptm` / `.docx` / `.docm`（マクロは無視）
 - 出力: ページ単位のラスタ画像を埋め込んだ PDF
 - 描画: Apache POI + Java2D + Apache PDFBox + XChart
 - 見た目はページ画像、検索・コピー用の不可視テキスト層を付与
@@ -37,7 +37,7 @@ Maven のリポジトリ設定:
 <dependency>
     <groupId>com.github.naofum</groupId>
     <artifactId>xlsx2pdf4j</artifactId>
-    <version>v1.0.0</version>
+    <version>v1.1.0</version>
 </dependency>
 ```
 
@@ -49,9 +49,11 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.naofum:xlsx2pdf4j:v1.0.0'
+    implementation 'com.github.naofum:xlsx2pdf4j:v1.1.0'
 }
 ```
+
+DOCX対応を含む `v1.1.0` は、タグ作成後にJitPackから取得できます。
 
 Java:
 
@@ -97,6 +99,26 @@ System.out.println(result.warnings());
 
 `slides(2, 4)` または `slide(2)` で1始まりのスライド番号を指定できます。非表示スライドは、明示的に選択した場合だけ変換されます。PPTXの失敗は `Pptx2PdfException` で通知されます。
 
+Word:
+
+```java
+import com.github.naofum.xlsx2pdf4j.api.Docx2Pdf;
+import com.github.naofum.xlsx2pdf4j.api.DocxConversionOptions;
+import com.github.naofum.xlsx2pdf4j.api.DocxConversionResult;
+
+DocxConversionResult result = Docx2Pdf.convert(
+        Path.of("document.docx"),
+        Path.of("document.pdf"),
+        DocxConversionOptions.builder()
+                .dpi(200)
+                .build());
+
+System.out.println(result.pageCount());
+System.out.println(result.warnings());
+```
+
+DOCXの失敗は `Docx2PdfException` で通知されます。
+
 ### Excel の主なオプション（`ConversionOptions`）
 
 | オプション | 既定値 | 説明 |
@@ -126,7 +148,19 @@ System.out.println(result.warnings());
 | `strict` | `false` | 未対応要素で例外にする |
 | `slides` | すべての表示スライド | 変換対象スライド番号（1始まり） |
 
-`strict` モードでは、Excelは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`FONT_MISSING`、`FORMULA_NO_CACHE` が例外になります。`SHAPE_APPROXIMATED` と `PAGE_LIMIT` は警告のまま処理を継続します。PowerPointは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`CHART_SKIPPED`、`SMART_ART_SKIPPED` が例外になります。
+### Word の主なオプション（`DocxConversionOptions`）
+
+| オプション | 既定値 | 説明 |
+|---|---|---|
+| `dpi` | `200` | ページ画像の解像度。72〜600 |
+| `textLayerMode` | `INVISIBLE` | 不可視テキスト層。`NONE` で無効化 |
+| `imageCompression` | `AUTO` | `PNG` / `JPEG` / `AUTO` |
+| `jpegQuality` | `0.9` | JPEG の品質 |
+| `maxPages` | `200` | 最大ページ数 |
+| `maxOutputBytes` | 50 MiB | 最大出力サイズ |
+| `strict` | `false` | 未対応要素で例外にする |
+
+`strict` モードでは、Excelは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`FONT_MISSING`、`FORMULA_NO_CACHE` が例外になります。`SHAPE_APPROXIMATED` と `PAGE_LIMIT` は警告のまま処理を継続します。PowerPointは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`CHART_SKIPPED`、`SMART_ART_SKIPPED` が例外になります。Wordは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED` が例外になります。
 
 ## 対応機能
 
@@ -183,6 +217,16 @@ System.out.println(result.warnings());
 - 不可視テキスト層（検索・コピー用、位置は近似）
 - 非表示スライドのスキップ、スライド番号・タイトルによる選択
 
+### Word
+
+- `.docx` / `.docm` の段落・見出し・改ページをページ単位でフロー配置
+- フォント、サイズ、太字、斜体、下線、色、配置、行間、インデント
+- 箇条書き・番号付き見出し（`numbering.xml` の一般的な形式）
+- 基本的な表（固定列幅、罫線、セル内の段落）
+- ヘッダー、フッター、ページ番号フィールド
+- 単純な図形・テキストボックス（DrawingMLの`wps:wsp`）
+- 不可視テキスト層（検索・コピー用、位置は近似）
+
 ### フォント・テキスト層
 
 - Noto Sans JP / Noto Serif JP の同梱とフォールバック
@@ -224,6 +268,16 @@ System.out.println(result.warnings());
 - グラフの軸ラベル・余白・凡例位置は XChart のレイアウトで近似される
 - 表・画像・グループは POI の描画に依存するため、複雑な表や効果は近似になる場合がある
 
+### Word
+
+- ページ分割・行分割はフォントメトリクスに依存するため、Word と完全には一致しない
+- 脚注・文末脚注、TOC、コメント、変更履歴、数式、SmartArt、グラフは未対応
+- Word のキャンバス（`wpc:wpc`）やグループ化された図形はスキップする
+- 複雑な表（可変列幅、行分割、セル結合の一部）は近似
+- 浮動画像の回り込み、段組み、高度なセクション区切りは未対応
+- ヘッダー/フッター内の図形・表はテキストとして近似
+- Word のページ数・改ページは Word のレイアウトエンジンと完全一致しない
+
 ## テスト
 
 ```powershell
@@ -252,6 +306,13 @@ PowerPoint:
 - `testdata/validation/sample3.pptx`: 角丸図形・矢印コネクタ・テキストボックス（1スライド）
 
 すべて16:9（960×540pt）です。`PptxConversionTest` が変換、ページ数、テキスト層、非表示スライドの扱いを確認します。
+
+Word:
+
+- `testdata/validation/sample1.docx`: タイトルページ、見出し、本文、ヘッダー/フッター、改ページ（3ページ）
+- `testdata/validation/sample2.docx`: 表、見出し、本文、番号付き見出し（2ページ）
+
+ページ数は Word 16 の表示と一致することを確認しています。`DocxConversionTest` が変換、ページ数、テキスト層を確認します。DOCXのgolden PDFは現時点では未追加です。
 
 再生成:
 
