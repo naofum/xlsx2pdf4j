@@ -42,20 +42,20 @@ class PptxGoldenPdfComparisonTest {
 
     @Test
     void sample1IsCloseToGoldenPdf() throws Exception {
-        compare("sample1");
+        compare("sample1", 1);
     }
 
     @Test
     void sample2IsCloseToGoldenPdf() throws Exception {
-        compare("sample2");
+        compare("sample2", 3);
     }
 
     @Test
     void sample3IsCloseToGoldenPdf() throws Exception {
-        compare("sample3");
+        compare("sample3", 1);
     }
 
-    private void compare(String name) throws Exception {
+    private void compare(String name, int expectedPages) throws Exception {
         Path workbook = Path.of("testdata", "validation", name + ".pptx");
         Path candidatePath = Path.of("target", "golden-candidate", "pptx-" + name + ".pdf");
         Path goldenPath = Path.of("testdata", "golden", name + ".pdf");
@@ -72,22 +72,33 @@ class PptxGoldenPdfComparisonTest {
         }
         try (PDDocument candidate = Loader.loadPDF(candidatePath.toFile());
              PDDocument golden = Loader.loadPDF(goldenPath.toFile())) {
-            assertThat(candidate.getNumberOfPages()).isEqualTo(1);
-            assertThat(golden.getNumberOfPages()).isEqualTo(1);
+            assertThat(candidate.getNumberOfPages()).isEqualTo(expectedPages);
+            assertThat(golden.getNumberOfPages()).isEqualTo(expectedPages);
 
-            BufferedImage a = new PDFRenderer(candidate)
-                    .renderImageWithDPI(0, 72, ImageType.RGB);
-            BufferedImage b = new PDFRenderer(golden)
-                    .renderImageWithDPI(0, 72, ImageType.RGB);
-            double difference = meanDifference(a, b);
-            System.out.printf("%s mean image difference = %.4f%n", name, difference);
+            PDFRenderer candidateRenderer = new PDFRenderer(candidate);
+            PDFRenderer goldenRenderer = new PDFRenderer(golden);
+            double[] differences = new double[expectedPages];
+            double total = 0;
+            for (int i = 0; i < expectedPages; i++) {
+                BufferedImage a = candidateRenderer.renderImageWithDPI(i, 72, ImageType.RGB);
+                BufferedImage b = goldenRenderer.renderImageWithDPI(i, 72, ImageType.RGB);
+                differences[i] = meanDifference(a, b);
+                total += differences[i];
+                if (WRITE_DIFF_IMAGES) {
+                    PageDiffWriter.write(diffDirectory, i + 1, a, b);
+                }
+            }
+            double mean = total / expectedPages;
+            System.out.printf("%s mean image difference = %.4f%n", name, mean);
             if (WRITE_DIFF_IMAGES) {
-                PageDiffWriter.write(diffDirectory, 1, a, b);
-                PageDiffWriter.writeSummary(diffDirectory, new double[]{difference});
+                PageDiffWriter.writeSummary(diffDirectory, differences);
                 assertThat(diffDirectory.resolve("page-01-diff.png")).exists();
+                assertThat(diffDirectory.resolve(
+                        String.format(java.util.Locale.ROOT, "page-%02d-diff.png", expectedPages)))
+                        .exists();
                 assertThat(diffDirectory.resolve("summary.txt")).exists();
             }
-            assertThat(difference).isLessThan(MAX_MEAN_DIFFERENCE);
+            assertThat(mean).isLessThan(MAX_MEAN_DIFFERENCE);
         }
     }
 

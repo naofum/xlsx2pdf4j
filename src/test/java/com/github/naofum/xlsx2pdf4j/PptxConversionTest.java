@@ -38,14 +38,17 @@ class PptxConversionTest {
     void convertsSamplePresentations() throws Exception {
         Path outputDir = Path.of("target", "pptx");
         Files.createDirectories(outputDir);
-        for (String name : new String[]{"sample1", "sample2", "sample3"}) {
+        String[] names = {"sample1", "sample2", "sample3"};
+        int[] expectedPages = {1, 3, 1};
+        for (int i = 0; i < names.length; i++) {
+            String name = names[i];
             ConversionResult result = Pptx2Pdf.convert(
                     Path.of("testdata", "validation", name + ".pptx"),
                     outputDir.resolve(name + ".pdf"),
                     ConversionOptions.builder().dpi(150).build());
 
-            assertThat(result.pageCount()).isEqualTo(1);
-            assertThat(result.pagesBySheet()).containsEntry("Slide 1", 1);
+            assertThat(result.pageCount()).isEqualTo(expectedPages[i]);
+            assertThat(result.pagesBySheet()).hasSize(expectedPages[i]);
             assertThat(result.warnings()).isEmpty();
             assertThat(result.output()).exists();
             assertThat(result.outputSize()).isLessThan(50L * 1024 * 1024);
@@ -56,8 +59,8 @@ class PptxConversionTest {
     void writesSearchableTextLayer() throws Exception {
         Path outputDir = Path.of("target", "pptx");
         Files.createDirectories(outputDir);
-        String[] expected = {"タイトル", "デモ画面", "Amazon Connect", "onConnecting"};
-        String[] names = {"sample1", "sample1", "sample2", "sample3"};
+        String[] expected = {"タイトル", "デモ画面", "画像", "表・グラフ", "グループ", "onConnecting"};
+        String[] names = {"sample1", "sample1", "sample2", "sample2", "sample2", "sample3"};
         for (int i = 0; i < names.length; i++) {
             Path pdf = outputDir.resolve(names[i] + "-text.pdf");
             Pptx2Pdf.convert(Path.of("testdata", "validation", names[i] + ".pptx"), pdf,

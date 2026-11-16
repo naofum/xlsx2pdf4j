@@ -179,6 +179,8 @@ PPTX では `dpi`、`textLayerMode`、`imageCompression`、`jpegQuality`、`maxP
 - フォントは同梱の Noto に正規化するため、元のフォントと字幅・見た目が変わる場合がある
 - PPTX の不可視テキスト層は図形の位置からの近似で、行単位の正確な配置ではない
 - 表・グループ内のテキストは不可視テキスト層に含まれない場合がある
+- 表の罫線・表スタイルは完全には再現されない場合がある
+- グラフの軸ラベル・余白・凡例位置は XChart のレイアウトで近似される
 - `fontScale`、`printScale`、`pageNumberingMode` は PPTX には適用されない
 - 表・画像・グループは POI の描画に依存するため、複雑な表や効果は近似になる場合がある
 
@@ -205,11 +207,11 @@ mvn test
 
 PowerPoint:
 
-- `testdata/validation/sample1.pptx`: タイトル・本文プレースホルダー
-- `testdata/validation/sample2.pptx`: 角丸図形・コネクタ・テキストボックス
-- `testdata/validation/sample3.pptx`: 角丸図形・矢印コネクタ・テキストボックス
+- `testdata/validation/sample1.pptx`: タイトル・本文プレースホルダー（1スライド）
+- `testdata/validation/sample2.pptx`: 画像、表＋グラフ、グループ（3スライド）
+- `testdata/validation/sample3.pptx`: 角丸図形・矢印コネクタ・テキストボックス（1スライド）
 
-各1スライド、16:9（960×540pt）です。`PptxConversionTest` が変換、ページ数、テキスト層、非表示スライドの扱いを確認します。
+すべて16:9（960×540pt）です。`PptxConversionTest` が変換、ページ数、テキスト層、非表示スライドの扱いを確認します。
 
 再生成:
 
