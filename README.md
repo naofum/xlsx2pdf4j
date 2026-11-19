@@ -37,7 +37,7 @@ Maven のリポジトリ設定:
 <dependency>
     <groupId>com.github.naofum</groupId>
     <artifactId>xlsx2pdf4j</artifactId>
-    <version>v1.1.1</version>
+    <version>v1.1.2</version>
 </dependency>
 ```
 
@@ -49,11 +49,11 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.naofum:xlsx2pdf4j:v1.1.1'
+    implementation 'com.github.naofum:xlsx2pdf4j:v1.1.2'
 }
 ```
 
-DOCX対応を含む `v1.1.1` は、タグ作成後にJitPackから取得できます。JitPackのMavenを3.9.11に固定するため、Maven Wrapperを同梱しています。
+DOCX対応と行高の自動拡張を含む `v1.1.2` は、タグ作成後にJitPackから取得できます。JitPackのMavenを3.9.11に固定するため、Maven Wrapperを同梱しています。
 
 Java:
 
