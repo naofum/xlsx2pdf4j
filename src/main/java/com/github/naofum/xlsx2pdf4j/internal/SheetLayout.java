@@ -285,6 +285,25 @@ public final class SheetLayout {
         return value == null ? "" : value;
     }
 
+    /**
+     * Replaces the row heights and rebuilds the absolute and rendered row
+     * offsets. Used by the row auto-height pass.
+     */
+    void applyRowHeights(double[] heights) {
+        if (heights.length != rowHeights.length) {
+            throw new IllegalArgumentException("row height array length mismatch");
+        }
+        System.arraycopy(heights, 0, rowHeights, 0, heights.length);
+        rowY[0] = 0;
+        for (int r = 0; r <= lastRow; r++) {
+            rowY[r + 1] = rowY[r] + rowHeights[r];
+        }
+        rowY[lastRow + 2] = rowY[lastRow + 1];
+        for (int r = 0; r < rowY.length; r++) {
+            renderRowY[r] = rowY[r] * ROW_HEIGHT_SCALE;
+        }
+    }
+
     public double titleWidth() {
         if (titleFirstColumn < 0) {
             return 0;
@@ -311,6 +330,15 @@ public final class SheetLayout {
 
     public static double renderRowOffset(double offset) {
         return offset * ROW_HEIGHT_SCALE;
+    }
+
+    /**
+     * Converts a height measured in rendered points to the stored row height
+     * that produces it. Auto-fit needs this because row heights are reduced by
+     * ROW_HEIGHT_SCALE on the page.
+     */
+    static double storedRowHeight(double renderHeight) {
+        return renderHeight / ROW_HEIGHT_SCALE;
     }
 
     public double renderTitleHeight() {

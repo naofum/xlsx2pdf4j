@@ -77,6 +77,10 @@ public final class ConversionService {
             if (sheets.isEmpty()) {
                 throw new Xlsx2PdfException(ErrorCode.INPUT_FORMAT, "no printable sheets were selected");
             }
+            RowAutoFitter rowAutoFitter = new RowAutoFitter(fonts, textEngine, formatter);
+            for (SheetLayout sheet : sheets) {
+                rowAutoFitter.fit(sheet);
+            }
 
             List<PageLayout> allPages = new ArrayList<>();
             Map<String, Integer> pagesBySheet = new LinkedHashMap<>();
