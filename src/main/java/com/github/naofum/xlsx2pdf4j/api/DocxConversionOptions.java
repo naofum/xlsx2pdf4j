@@ -31,6 +31,7 @@ public final class DocxConversionOptions {
     private final int maxPages;
     private final long maxOutputBytes;
     private final boolean strict;
+    private final PdfMetadata pdfMetadata;
 
     private DocxConversionOptions(Builder builder) {
         this.dpi = builder.dpi;
@@ -40,6 +41,7 @@ public final class DocxConversionOptions {
         this.maxPages = builder.maxPages;
         this.maxOutputBytes = builder.maxOutputBytes;
         this.strict = builder.strict;
+        this.pdfMetadata = builder.pdfMetadata;
     }
 
     public static Builder builder() {
@@ -78,6 +80,11 @@ public final class DocxConversionOptions {
         return strict;
     }
 
+    /** Optional PDF metadata. Null keeps the existing PDF attributes. */
+    public PdfMetadata pdfMetadata() {
+        return pdfMetadata;
+    }
+
     public static final class Builder {
 
         private int dpi = 200;
@@ -87,6 +94,7 @@ public final class DocxConversionOptions {
         private int maxPages = DEFAULT_MAX_PAGES;
         private long maxOutputBytes = DEFAULT_MAX_OUTPUT_BYTES;
         private boolean strict;
+        private PdfMetadata pdfMetadata;
 
         private Builder() {
         }
@@ -135,6 +143,12 @@ public final class DocxConversionOptions {
 
         public Builder strict(boolean strict) {
             this.strict = strict;
+            return this;
+        }
+
+        /** Optional PDF metadata. Null keeps the existing attributes. */
+        public Builder pdfMetadata(PdfMetadata metadata) {
+            this.pdfMetadata = metadata;
             return this;
         }
 

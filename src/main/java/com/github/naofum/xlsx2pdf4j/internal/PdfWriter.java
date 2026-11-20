@@ -16,6 +16,7 @@
 
 package com.github.naofum.xlsx2pdf4j.internal;
 
+import com.github.naofum.xlsx2pdf4j.api.PdfMetadata;
 import com.github.naofum.xlsx2pdf4j.api.Xlsx2PdfException;
 import com.github.naofum.xlsx2pdf4j.api.ErrorCode;
 import com.github.naofum.xlsx2pdf4j.api.ImageCompression;
@@ -36,6 +37,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.Locale;
 
 /**
@@ -49,16 +54,23 @@ public final class PdfWriter implements AutoCloseable {
     private final long maxOutputBytes;
     private final ImageCompression compression;
     private final float jpegQuality;
+    private final PdfMetadata metadata;
     private final Path temp;
     private PDType0Font textFont;
     private boolean textFontTried;
 
     public PdfWriter(Path output, long maxOutputBytes, ImageCompression compression, float jpegQuality)
             throws Xlsx2PdfException {
+        this(output, maxOutputBytes, compression, jpegQuality, null);
+    }
+
+    public PdfWriter(Path output, long maxOutputBytes, ImageCompression compression,
+                     float jpegQuality, PdfMetadata metadata) throws Xlsx2PdfException {
         this.output = output;
         this.maxOutputBytes = maxOutputBytes;
         this.compression = compression;
         this.jpegQuality = jpegQuality;
+        this.metadata = metadata;
         try {
             Path parent = output.toAbsolutePath().getParent();
             if (parent != null) {
@@ -150,14 +162,44 @@ public final class PdfWriter implements AutoCloseable {
         return out.toString().trim();
     }
 
+    private void applyMetadata(PDDocumentInformation info, String fallbackTitle) {
+        String title = metadata == null ? null : metadata.title();
+        if (title == null) {
+            title = fallbackTitle;
+        }
+        if (title != null && !title.isBlank()) {
+            info.setTitle(title);
+        }
+        if (metadata != null) {
+            if (metadata.author() != null) {
+                info.setAuthor(metadata.author());
+            }
+            if (metadata.subject() != null) {
+                info.setSubject(metadata.subject());
+            }
+            if (metadata.keywords() != null) {
+                info.setKeywords(metadata.keywords());
+            }
+            if (metadata.creationDate() != null) {
+                info.setCreationDate(toCalendar(metadata.creationDate()));
+            }
+            if (metadata.modificationDate() != null) {
+                info.setModificationDate(toCalendar(metadata.modificationDate()));
+            }
+        }
+        info.setProducer(metadata != null && metadata.producer() != null
+                ? metadata.producer() : "xlsx2pdf4j");
+        info.setCreator(metadata != null && metadata.creator() != null
+                ? metadata.creator() : "xlsx2pdf4j");
+    }
+
+    private static Calendar toCalendar(Instant instant) {
+        return GregorianCalendar.from(instant.atZone(ZoneOffset.UTC));
+    }
+
     public void finish(String title) throws Xlsx2PdfException {
         try {
-            PDDocumentInformation info = document.getDocumentInformation();
-            if (title != null && !title.isBlank()) {
-                info.setTitle(title);
-            }
-            info.setProducer("xlsx2pdf4j");
-            info.setCreator("xlsx2pdf4j");
+            applyMetadata(document.getDocumentInformation(), title);
             document.save(temp.toFile());
             document.close();
             long size = Files.size(temp);

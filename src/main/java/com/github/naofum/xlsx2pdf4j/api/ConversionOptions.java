@@ -45,6 +45,7 @@ public final class ConversionOptions {
     private final double printScale;
     private final PageNumberingMode defaultPageNumberingMode;
     private final Map<String, PageNumberingMode> pageNumberingModes;
+    private final PdfMetadata pdfMetadata;
 
     private ConversionOptions(Builder builder) {
         this.sheets = Collections.unmodifiableSet(new LinkedHashSet<>(builder.sheets));
@@ -60,6 +61,7 @@ public final class ConversionOptions {
         this.printScale = builder.printScale;
         this.defaultPageNumberingMode = builder.defaultPageNumberingMode;
         this.pageNumberingModes = Collections.unmodifiableMap(new LinkedHashMap<>(builder.pageNumberingModes));
+        this.pdfMetadata = builder.pdfMetadata;
     }
 
     public static Builder builder() {
@@ -132,6 +134,11 @@ public final class ConversionOptions {
         return pageNumberingModes;
     }
 
+    /** Optional PDF metadata. Null keeps the existing PDF attributes. */
+    public PdfMetadata pdfMetadata() {
+        return pdfMetadata;
+    }
+
     public static final class Builder {
         private final Set<String> sheets = new LinkedHashSet<>();
         private int dpi = 200;
@@ -146,6 +153,7 @@ public final class ConversionOptions {
         private double printScale;
         private PageNumberingMode defaultPageNumberingMode = PageNumberingMode.EXCEL_AUTOMATIC;
         private final Map<String, PageNumberingMode> pageNumberingModes = new LinkedHashMap<>();
+        private PdfMetadata pdfMetadata;
 
         private Builder() {
         }
@@ -249,6 +257,12 @@ public final class ConversionOptions {
                 throw new IllegalArgumentException("sheetName must not be empty");
             }
             this.pageNumberingModes.put(sheetName, mode == null ? PageNumberingMode.EXCEL_AUTOMATIC : mode);
+            return this;
+        }
+
+        /** Optional PDF metadata. Null keeps the existing attributes. */
+        public Builder pdfMetadata(PdfMetadata metadata) {
+            this.pdfMetadata = metadata;
             return this;
         }
 

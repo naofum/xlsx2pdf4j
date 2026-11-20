@@ -17,6 +17,7 @@ package com.github.naofum.xlsx2pdf4j;
 
 import com.github.naofum.xlsx2pdf4j.api.DocxConversionOptions;
 import com.github.naofum.xlsx2pdf4j.api.ImageCompression;
+import com.github.naofum.xlsx2pdf4j.api.PdfMetadata;
 import com.github.naofum.xlsx2pdf4j.api.TextLayerMode;
 import org.junit.jupiter.api.Test;
 
@@ -57,6 +58,15 @@ class DocxConversionOptionsTest {
         assertThat(options.maxPages()).isEqualTo(10);
         assertThat(options.maxOutputBytes()).isEqualTo(1024 * 1024);
         assertThat(options.strict()).isTrue();
+    }
+
+    @Test
+    void carriesPdfMetadata() {
+        PdfMetadata metadata = PdfMetadata.builder().author("Author").build();
+
+        assertThat(DocxConversionOptions.defaults().pdfMetadata()).isNull();
+        assertThat(DocxConversionOptions.builder().pdfMetadata(metadata).build().pdfMetadata())
+                .isSameAs(metadata);
     }
 
     @Test

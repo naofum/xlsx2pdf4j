@@ -108,7 +108,7 @@ public final class ConversionService {
 
             ImageCompression compression = effectiveImageCompression(options);
             try (PdfWriter pdf = new PdfWriter(absoluteOutput, options.maxOutputBytes(),
-                    compression, options.jpegQuality())) {
+                    compression, options.jpegQuality(), options.pdfMetadata())) {
                 int totalPages = allPages.size();
                 String fileName = input.getFileName() == null ? "" : input.getFileName().toString();
                 for (SheetLayout sheet : sheets) {

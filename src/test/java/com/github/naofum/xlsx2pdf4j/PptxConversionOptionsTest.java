@@ -16,6 +16,7 @@
 package com.github.naofum.xlsx2pdf4j;
 
 import com.github.naofum.xlsx2pdf4j.api.ImageCompression;
+import com.github.naofum.xlsx2pdf4j.api.PdfMetadata;
 import com.github.naofum.xlsx2pdf4j.api.PptxConversionOptions;
 import com.github.naofum.xlsx2pdf4j.api.TextLayerMode;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,15 @@ class PptxConversionOptionsTest {
         assertThat(options.maxSlides()).isEqualTo(10);
         assertThat(options.maxOutputBytes()).isEqualTo(1024 * 1024);
         assertThat(options.strict()).isTrue();
+    }
+
+    @Test
+    void carriesPdfMetadata() {
+        PdfMetadata metadata = PdfMetadata.builder().author("Author").build();
+
+        assertThat(PptxConversionOptions.defaults().pdfMetadata()).isNull();
+        assertThat(PptxConversionOptions.builder().pdfMetadata(metadata).build().pdfMetadata())
+                .isSameAs(metadata);
     }
 
     @Test

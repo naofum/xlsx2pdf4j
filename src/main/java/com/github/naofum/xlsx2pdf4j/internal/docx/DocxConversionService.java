@@ -67,7 +67,7 @@ public final class DocxConversionService {
             ImageCompression compression = effectiveImageCompression(options);
             String fileName = input.getFileName() == null ? "" : input.getFileName().toString();
             try (PdfWriter pdf = new PdfWriter(absoluteOutput, options.maxOutputBytes(),
-                    compression, options.jpegQuality())) {
+                    compression, options.jpegQuality(), options.pdfMetadata())) {
                 DocxFlowLayout layout = new DocxFlowLayout(model, options, pdf, warnings);
                 int pages = layout.render();
                 checkStrict(options, warnings);

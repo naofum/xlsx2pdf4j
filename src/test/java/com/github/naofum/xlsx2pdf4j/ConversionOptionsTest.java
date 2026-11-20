@@ -17,6 +17,7 @@
 package com.github.naofum.xlsx2pdf4j;
 
 import com.github.naofum.xlsx2pdf4j.api.ConversionOptions;
+import com.github.naofum.xlsx2pdf4j.api.PdfMetadata;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,6 +42,15 @@ class ConversionOptionsTest {
 
         assertThat(options.fontScale()).isEqualTo(0.85);
         assertThat(options.printScale()).isEqualTo(0.75);
+    }
+
+    @Test
+    void carriesPdfMetadata() {
+        PdfMetadata metadata = PdfMetadata.builder().author("Author").build();
+
+        assertThat(ConversionOptions.defaults().pdfMetadata()).isNull();
+        assertThat(ConversionOptions.builder().pdfMetadata(metadata).build().pdfMetadata())
+                .isSameAs(metadata);
     }
 
     @Test

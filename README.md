@@ -37,7 +37,7 @@ Maven のリポジトリ設定:
 <dependency>
     <groupId>com.github.naofum</groupId>
     <artifactId>xlsx2pdf4j</artifactId>
-    <version>v1.1.2</version>
+    <version>v1.2.0</version>
 </dependency>
 ```
 
@@ -49,11 +49,11 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.naofum:xlsx2pdf4j:v1.1.2'
+    implementation 'com.github.naofum:xlsx2pdf4j:v1.2.0'
 }
 ```
 
-DOCX対応、行高の自動拡張、`applyBorder` 未設定時の罫線表示を含む `v1.1.2` は、タグ作成後にJitPackから取得できます。JitPackのMavenを3.9.11に固定するため、Maven Wrapperを同梱しています。
+DOCX対応、行高の自動拡張、`applyBorder` 未設定時の罫線表示、PDFメタデータ設定を含む `v1.2.0` は、タグ作成後にJitPackから取得できます。JitPackのMavenを3.9.11に固定するため、Maven Wrapperを同梱しています。
 
 Java:
 
@@ -119,6 +119,41 @@ System.out.println(result.warnings());
 
 DOCXの失敗は `Docx2PdfException` で通知されます。
 
+### PDFメタデータ
+
+`PdfMetadata` でPDFのタイトル、作成者、件名などを指定できます。すべてのフィールドは任意です。
+
+```java
+import com.github.naofum.xlsx2pdf4j.api.PdfMetadata;
+import com.github.naofum.xlsx2pdf4j.api.ConversionOptions;
+
+import java.time.Instant;
+
+PdfMetadata metadata = PdfMetadata.builder()
+        .title("月次報告書")
+        .author("開発部")
+        .subject("2026年11月度")
+        .keywords("報告書, 月次")
+        .creator("社内システム")
+        .producer("xlsx2pdf4j")
+        .creationDate(Instant.parse("2026-11-20T00:00:00Z"))
+        .modificationDate(Instant.parse("2026-11-20T00:00:00Z"))
+        .build();
+
+Xlsx2Pdf.convert(input, output,
+        ConversionOptions.builder()
+                .pdfMetadata(metadata)
+                .build());
+```
+
+`PptxConversionOptions` と `DocxConversionOptions` にも同じ `pdfMetadata(...)` があります。
+
+未指定時の動作は従来どおりです。
+
+- `title`: 入力ファイル名
+- `creator` / `producer`: `xlsx2pdf4j`
+- `author` / `subject` / `keywords` / 日時: 未設定
+
 ### Excel の主なオプション（`ConversionOptions`）
 
 | オプション | 既定値 | 説明 |
@@ -134,6 +169,7 @@ DOCXの失敗は `Docx2PdfException` で通知されます。
 | `imageCompression` | `AUTO` | `PNG` / `JPEG` / `AUTO` |
 | `jpegQuality` | `0.9` | JPEG の品質 |
 | `pageNumberingMode` | `EXCEL_AUTOMATIC` | ヘッダー・フッターのページ番号モード |
+| `pdfMetadata` | 未指定 | PDFのTitle/Author/Subject/Keywords/Creator/Producer/日時 |
 
 ### PowerPoint の主なオプション（`PptxConversionOptions`）
 
@@ -147,6 +183,7 @@ DOCXの失敗は `Docx2PdfException` で通知されます。
 | `maxOutputBytes` | 50 MiB | 最大出力サイズ |
 | `strict` | `false` | 未対応要素で例外にする |
 | `slides` | すべての表示スライド | 変換対象スライド番号（1始まり） |
+| `pdfMetadata` | 未指定 | PDFのTitle/Author/Subject/Keywords/Creator/Producer/日時 |
 
 ### Word の主なオプション（`DocxConversionOptions`）
 
@@ -159,6 +196,7 @@ DOCXの失敗は `Docx2PdfException` で通知されます。
 | `maxPages` | `200` | 最大ページ数 |
 | `maxOutputBytes` | 50 MiB | 最大出力サイズ |
 | `strict` | `false` | 未対応要素で例外にする |
+| `pdfMetadata` | 未指定 | PDFのTitle/Author/Subject/Keywords/Creator/Producer/日時 |
 
 `strict` モードでは、Excelは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`FONT_MISSING`、`FORMULA_NO_CACHE` が例外になります。`SHAPE_APPROXIMATED` と `PAGE_LIMIT` は警告のまま処理を継続します。PowerPointは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`CHART_SKIPPED`、`SMART_ART_SKIPPED` が例外になります。Wordは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED` が例外になります。
 

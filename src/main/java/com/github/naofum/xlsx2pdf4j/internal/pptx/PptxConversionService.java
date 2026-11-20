@@ -92,7 +92,7 @@ public final class PptxConversionService {
             String fileName = input.getFileName() == null ? "" : input.getFileName().toString();
 
             try (PdfWriter pdf = new PdfWriter(absoluteOutput, options.maxOutputBytes(),
-                    compression, options.jpegQuality())) {
+                    compression, options.jpegQuality(), options.pdfMetadata())) {
                 for (XSLFSlide slide : selected.values()) {
                     List<PlacedText> textLayer = options.textLayerMode() == TextLayerMode.INVISIBLE
                             ? new ArrayList<>() : null;

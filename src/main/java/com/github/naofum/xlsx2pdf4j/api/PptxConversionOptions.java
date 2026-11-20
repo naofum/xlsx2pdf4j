@@ -36,6 +36,7 @@ public final class PptxConversionOptions {
     private final int maxSlides;
     private final long maxOutputBytes;
     private final boolean strict;
+    private final PdfMetadata pdfMetadata;
 
     private PptxConversionOptions(Builder builder) {
         this.slides = Collections.unmodifiableSet(new LinkedHashSet<>(builder.slides));
@@ -46,6 +47,7 @@ public final class PptxConversionOptions {
         this.maxSlides = builder.maxSlides;
         this.maxOutputBytes = builder.maxOutputBytes;
         this.strict = builder.strict;
+        this.pdfMetadata = builder.pdfMetadata;
     }
 
     public static Builder builder() {
@@ -89,6 +91,11 @@ public final class PptxConversionOptions {
         return strict;
     }
 
+    /** Optional PDF metadata. Null keeps the existing PDF attributes. */
+    public PdfMetadata pdfMetadata() {
+        return pdfMetadata;
+    }
+
     public static final class Builder {
 
         private final Set<Integer> slides = new LinkedHashSet<>();
@@ -99,6 +106,7 @@ public final class PptxConversionOptions {
         private int maxSlides = DEFAULT_MAX_SLIDES;
         private long maxOutputBytes = DEFAULT_MAX_OUTPUT_BYTES;
         private boolean strict;
+        private PdfMetadata pdfMetadata;
 
         private Builder() {
         }
@@ -165,6 +173,12 @@ public final class PptxConversionOptions {
 
         public Builder strict(boolean strict) {
             this.strict = strict;
+            return this;
+        }
+
+        /** Optional PDF metadata. Null keeps the existing attributes. */
+        public Builder pdfMetadata(PdfMetadata metadata) {
+            this.pdfMetadata = metadata;
             return this;
         }
 
