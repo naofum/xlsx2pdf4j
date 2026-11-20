@@ -93,6 +93,7 @@ public final class PptxConversionService {
 
             try (PdfWriter pdf = new PdfWriter(absoluteOutput, options.maxOutputBytes(),
                     compression, options.jpegQuality(), options.pdfMetadata())) {
+                int physicalPage = 1;
                 for (XSLFSlide slide : selected.values()) {
                     List<PlacedText> textLayer = options.textLayerMode() == TextLayerMode.INVISIBLE
                             ? new ArrayList<>() : null;
@@ -100,6 +101,13 @@ public final class PptxConversionService {
                             options.dpi(), charts, textLayer, warnings);
                     checkStrict(options, warnings);
                     pdf.addPage(image, pageSize.getWidth(), pageSize.getHeight(), textLayer);
+                    if (options.slideBookmarks()) {
+                        String title = slide.getTitle();
+                        if (title != null && !title.isBlank()) {
+                            pdf.addBookmark(title.strip(), physicalPage);
+                        }
+                    }
+                    physicalPage++;
                     image.flush();
                 }
                 pdf.finish(fileName);

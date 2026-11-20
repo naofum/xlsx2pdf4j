@@ -70,6 +70,13 @@ class DocxConversionOptionsTest {
     }
 
     @Test
+    void headingBookmarksAreOptIn() {
+        assertThat(DocxConversionOptions.defaults().headingBookmarks()).isFalse();
+        assertThat(DocxConversionOptions.builder().headingBookmarks(true).build().headingBookmarks())
+                .isTrue();
+    }
+
+    @Test
     void rejectsInvalidValues() {
         assertThatThrownBy(() -> DocxConversionOptions.builder().dpi(71))
                 .isInstanceOf(IllegalArgumentException.class);

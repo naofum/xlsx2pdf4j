@@ -16,10 +16,10 @@
 
 package com.github.naofum.xlsx2pdf4j.internal;
 
-import com.github.naofum.xlsx2pdf4j.api.PdfMetadata;
-import com.github.naofum.xlsx2pdf4j.api.Xlsx2PdfException;
 import com.github.naofum.xlsx2pdf4j.api.ErrorCode;
 import com.github.naofum.xlsx2pdf4j.api.ImageCompression;
+import com.github.naofum.xlsx2pdf4j.api.PdfMetadata;
+import com.github.naofum.xlsx2pdf4j.api.Xlsx2PdfException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -30,6 +30,9 @@ import org.apache.pdfbox.pdmodel.graphics.image.JPEGFactory;
 import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.graphics.state.RenderingMode;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineNode;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -39,8 +42,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -56,6 +61,7 @@ public final class PdfWriter implements AutoCloseable {
     private final float jpegQuality;
     private final PdfMetadata metadata;
     private final Path temp;
+    private final List<Bookmark> bookmarks = new ArrayList<>();
     private PDType0Font textFont;
     private boolean textFontTried;
 
@@ -162,6 +168,54 @@ public final class PdfWriter implements AutoCloseable {
         return out.toString().trim();
     }
 
+    /** Adds a top-level bookmark whose destination is a 1-based physical page. */
+    public void addBookmark(String title, int pageNumber) {
+        addBookmark(title, pageNumber, 0);
+    }
+
+    /**
+     * Adds a bookmark. Level 0 is top-level; level 1 is a child of the previous
+     * level-0 bookmark, and so on. Pages are resolved when the PDF is saved.
+     */
+    public void addBookmark(String title, int pageNumber, int level) {
+        String value = sanitize(title);
+        if (value.isEmpty() || pageNumber < 1) {
+            return;
+        }
+        bookmarks.add(new Bookmark(value, pageNumber, Math.max(0, level)));
+    }
+
+    private void applyBookmarks() {
+        if (bookmarks.isEmpty()) {
+            return;
+        }
+        PDDocumentOutline outline = new PDDocumentOutline();
+        List<PDOutlineNode> parents = new ArrayList<>();
+        parents.add(outline);
+        boolean added = false;
+        for (Bookmark bookmark : bookmarks) {
+            int pageIndex = bookmark.pageNumber() - 1;
+            if (pageIndex < 0 || pageIndex >= document.getNumberOfPages()) {
+                continue;
+            }
+            int level = Math.min(bookmark.level(), parents.size() - 1);
+            PDOutlineItem item = new PDOutlineItem();
+            item.setTitle(bookmark.title());
+            item.setDestination(document.getPage(pageIndex));
+            parents.get(level).addLast(item);
+            item.openNode();
+            while (parents.size() > level + 1) {
+                parents.remove(parents.size() - 1);
+            }
+            parents.add(item);
+            added = true;
+        }
+        if (added) {
+            outline.openNode();
+            document.getDocumentCatalog().setDocumentOutline(outline);
+        }
+    }
+
     private void applyMetadata(PDDocumentInformation info, String fallbackTitle) {
         String title = metadata == null ? null : metadata.title();
         if (title == null) {
@@ -200,6 +254,7 @@ public final class PdfWriter implements AutoCloseable {
     public void finish(String title) throws Xlsx2PdfException {
         try {
             applyMetadata(document.getDocumentInformation(), title);
+            applyBookmarks();
             document.save(temp.toFile());
             document.close();
             long size = Files.size(temp);
@@ -230,6 +285,9 @@ public final class PdfWriter implements AutoCloseable {
                 }
             }
         }
+    }
+
+    private record Bookmark(String title, int pageNumber, int level) {
     }
 
     @Override

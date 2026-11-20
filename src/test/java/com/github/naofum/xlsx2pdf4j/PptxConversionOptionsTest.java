@@ -74,6 +74,13 @@ class PptxConversionOptionsTest {
     }
 
     @Test
+    void slideBookmarksAreOptIn() {
+        assertThat(PptxConversionOptions.defaults().slideBookmarks()).isFalse();
+        assertThat(PptxConversionOptions.builder().slideBookmarks(true).build().slideBookmarks())
+                .isTrue();
+    }
+
+    @Test
     void rejectsInvalidValues() {
         assertThatThrownBy(() -> PptxConversionOptions.builder().dpi(71))
                 .isInstanceOf(IllegalArgumentException.class);

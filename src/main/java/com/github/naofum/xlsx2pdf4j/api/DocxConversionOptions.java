@@ -32,6 +32,7 @@ public final class DocxConversionOptions {
     private final long maxOutputBytes;
     private final boolean strict;
     private final PdfMetadata pdfMetadata;
+    private final boolean headingBookmarks;
 
     private DocxConversionOptions(Builder builder) {
         this.dpi = builder.dpi;
@@ -42,6 +43,7 @@ public final class DocxConversionOptions {
         this.maxOutputBytes = builder.maxOutputBytes;
         this.strict = builder.strict;
         this.pdfMetadata = builder.pdfMetadata;
+        this.headingBookmarks = builder.headingBookmarks;
     }
 
     public static Builder builder() {
@@ -85,6 +87,11 @@ public final class DocxConversionOptions {
         return pdfMetadata;
     }
 
+    /** Whether Word headings get nested PDF bookmarks. */
+    public boolean headingBookmarks() {
+        return headingBookmarks;
+    }
+
     public static final class Builder {
 
         private int dpi = 200;
@@ -95,6 +102,7 @@ public final class DocxConversionOptions {
         private long maxOutputBytes = DEFAULT_MAX_OUTPUT_BYTES;
         private boolean strict;
         private PdfMetadata pdfMetadata;
+        private boolean headingBookmarks;
 
         private Builder() {
         }
@@ -149,6 +157,12 @@ public final class DocxConversionOptions {
         /** Optional PDF metadata. Null keeps the existing attributes. */
         public Builder pdfMetadata(PdfMetadata metadata) {
             this.pdfMetadata = metadata;
+            return this;
+        }
+
+        /** Adds nested PDF bookmarks for Word heading styles. */
+        public Builder headingBookmarks(boolean headingBookmarks) {
+            this.headingBookmarks = headingBookmarks;
             return this;
         }
 

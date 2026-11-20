@@ -60,6 +60,7 @@ final class DocxStyle {
     boolean pageBreakBefore;
     Integer numberingId;
     Integer numberingLevel;
+    int outlineLevel = -1;
 
     DocxStyle copy() {
         DocxStyle copy = new DocxStyle();
@@ -81,6 +82,7 @@ final class DocxStyle {
         copy.pageBreakBefore = pageBreakBefore;
         copy.numberingId = numberingId;
         copy.numberingLevel = numberingLevel;
+        copy.outlineLevel = outlineLevel;
         return copy;
     }
 
@@ -192,6 +194,12 @@ final class DocxStyle {
         }
         if (properties.getPageBreakBefore() != null) {
             pageBreakBefore = on(properties.getPageBreakBefore());
+        }
+        if (properties.getOutlineLvl() != null
+                && properties.getOutlineLvl().getVal() != null) {
+            int value = properties.getOutlineLvl().getVal().intValue();
+            // 0-8 are heading outline levels; 9 means body text.
+            outlineLevel = value >= 0 && value < 9 ? value : -1;
         }
     }
 

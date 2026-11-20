@@ -37,6 +37,7 @@ public final class PptxConversionOptions {
     private final long maxOutputBytes;
     private final boolean strict;
     private final PdfMetadata pdfMetadata;
+    private final boolean slideBookmarks;
 
     private PptxConversionOptions(Builder builder) {
         this.slides = Collections.unmodifiableSet(new LinkedHashSet<>(builder.slides));
@@ -48,6 +49,7 @@ public final class PptxConversionOptions {
         this.maxOutputBytes = builder.maxOutputBytes;
         this.strict = builder.strict;
         this.pdfMetadata = builder.pdfMetadata;
+        this.slideBookmarks = builder.slideBookmarks;
     }
 
     public static Builder builder() {
@@ -96,6 +98,11 @@ public final class PptxConversionOptions {
         return pdfMetadata;
     }
 
+    /** Whether each slide title gets a PDF bookmark. */
+    public boolean slideBookmarks() {
+        return slideBookmarks;
+    }
+
     public static final class Builder {
 
         private final Set<Integer> slides = new LinkedHashSet<>();
@@ -107,6 +114,7 @@ public final class PptxConversionOptions {
         private long maxOutputBytes = DEFAULT_MAX_OUTPUT_BYTES;
         private boolean strict;
         private PdfMetadata pdfMetadata;
+        private boolean slideBookmarks;
 
         private Builder() {
         }
@@ -179,6 +187,12 @@ public final class PptxConversionOptions {
         /** Optional PDF metadata. Null keeps the existing attributes. */
         public Builder pdfMetadata(PdfMetadata metadata) {
             this.pdfMetadata = metadata;
+            return this;
+        }
+
+        /** Adds a PDF bookmark for each slide that has a title. */
+        public Builder slideBookmarks(boolean slideBookmarks) {
+            this.slideBookmarks = slideBookmarks;
             return this;
         }
 

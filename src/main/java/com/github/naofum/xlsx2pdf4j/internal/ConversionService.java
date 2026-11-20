@@ -110,12 +110,14 @@ public final class ConversionService {
             try (PdfWriter pdf = new PdfWriter(absoluteOutput, options.maxOutputBytes(),
                     compression, options.jpegQuality(), options.pdfMetadata())) {
                 int totalPages = allPages.size();
+                int physicalPage = 1;
                 String fileName = input.getFileName() == null ? "" : input.getFileName().toString();
                 for (SheetLayout sheet : sheets) {
                     CellRenderer cellRenderer = new CellRenderer(workbook, sheet, fonts, textEngine,
                             formatter, evaluator, warnings);
                     PageRenderer pageRenderer = new PageRenderer(cellRenderer, shapeRenderer,
                             headerFooter, options.dpi());
+                    boolean bookmarkAdded = false;
                     for (PageLayout page : allPages) {
                         if (page.sheet != sheet) {
                             continue;
@@ -127,6 +129,11 @@ public final class ConversionService {
                         BufferedImage image = pageRenderer.render(page, totalPages, fileName, warnings, textLayer);
                         checkStrict(options, warnings);
                         pdf.addPage(image, page.pageWidth, page.pageHeight, textLayer);
+                        if (options.sheetBookmarks() && !bookmarkAdded) {
+                            pdf.addBookmark(sheet.name, physicalPage);
+                            bookmarkAdded = true;
+                        }
+                        physicalPage++;
                         image.flush();
                     }
                 }

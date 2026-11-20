@@ -53,7 +53,7 @@ dependencies {
 }
 ```
 
-DOCX対応、行高の自動拡張、`applyBorder` 未設定時の罫線表示、PDFメタデータ設定を含む `v1.2.0` は、タグ作成後にJitPackから取得できます。JitPackのMavenを3.9.11に固定するため、Maven Wrapperを同梱しています。
+DOCX対応、行高の自動拡張、`applyBorder` 未設定時の罫線表示、PDFメタデータ設定、PDFしおりを含む `v1.2.0` は、タグ作成後にJitPackから取得できます。JitPackのMavenを3.9.11に固定するため、Maven Wrapperを同梱しています。
 
 Java:
 
@@ -154,6 +154,33 @@ Xlsx2Pdf.convert(input, output,
 - `creator` / `producer`: `xlsx2pdf4j`
 - `author` / `subject` / `keywords` / 日時: 未設定
 
+### PDFしおり
+
+オプトインでPDFのしおりを追加できます。
+
+```java
+Xlsx2Pdf.convert(input, output,
+        ConversionOptions.builder()
+                .sheetBookmarks(true)
+                .build());
+
+Pptx2Pdf.convert(input, output,
+        PptxConversionOptions.builder()
+                .slideBookmarks(true)
+                .build());
+
+Docx2Pdf.convert(input, output,
+        DocxConversionOptions.builder()
+                .headingBookmarks(true)
+                .build());
+```
+
+- Excel: シート名を各シートの先頭ページへのしおりにします
+- PowerPoint: スライドのタイトルをしおりにします。タイトルのないスライドは対象外です
+- Word: 見出しスタイルのアウトラインレベルをしおりにします。`Heading 1` を親、`Heading 2` を子とする階層になります
+
+すべて既定値は `false` です。
+
 ### Excel の主なオプション（`ConversionOptions`）
 
 | オプション | 既定値 | 説明 |
@@ -170,6 +197,7 @@ Xlsx2Pdf.convert(input, output,
 | `jpegQuality` | `0.9` | JPEG の品質 |
 | `pageNumberingMode` | `EXCEL_AUTOMATIC` | ヘッダー・フッターのページ番号モード |
 | `pdfMetadata` | 未指定 | PDFのTitle/Author/Subject/Keywords/Creator/Producer/日時 |
+| `sheetBookmarks` | `false` | シート名をPDFしおりとして追加 |
 
 ### PowerPoint の主なオプション（`PptxConversionOptions`）
 
@@ -184,6 +212,7 @@ Xlsx2Pdf.convert(input, output,
 | `strict` | `false` | 未対応要素で例外にする |
 | `slides` | すべての表示スライド | 変換対象スライド番号（1始まり） |
 | `pdfMetadata` | 未指定 | PDFのTitle/Author/Subject/Keywords/Creator/Producer/日時 |
+| `slideBookmarks` | `false` | スライドタイトルをPDFしおりとして追加 |
 
 ### Word の主なオプション（`DocxConversionOptions`）
 
@@ -197,6 +226,7 @@ Xlsx2Pdf.convert(input, output,
 | `maxOutputBytes` | 50 MiB | 最大出力サイズ |
 | `strict` | `false` | 未対応要素で例外にする |
 | `pdfMetadata` | 未指定 | PDFのTitle/Author/Subject/Keywords/Creator/Producer/日時 |
+| `headingBookmarks` | `false` | Word見出しを階層化したPDFしおりとして追加 |
 
 `strict` モードでは、Excelは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`FONT_MISSING`、`FORMULA_NO_CACHE` が例外になります。`SHAPE_APPROXIMATED` と `PAGE_LIMIT` は警告のまま処理を継続します。PowerPointは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED`、`CHART_SKIPPED`、`SMART_ART_SKIPPED` が例外になります。Wordは `SHAPE_UNSUPPORTED`、`IMAGE_UNSUPPORTED` が例外になります。
 
@@ -222,6 +252,7 @@ Xlsx2Pdf.convert(input, output,
 - Excel の PDF 出力に合わせた行高の描画スケール
 - ヘッダー、フッター、ページ番号
 - ページ番号モード（Excel 自動 / シート単位のユーザー指定）
+- オプトインのPDFしおり（Excelシート名、PowerPointスライドタイトル、Word見出し）
 
 ### 図形
 
@@ -357,6 +388,8 @@ Word:
 - `testdata/validation/sample2.docx`: 表、見出し、本文、番号付き見出し（2ページ）
 
 ページ数は Word 16 の表示と一致することを確認しています。`DocxConversionTest` が変換、ページ数、テキスト層を確認します。DOCXのgolden PDFは現時点では未追加です。
+
+PDFのメタデータとしおりは、`PdfMetadataTest` と `PdfBookmarksTest` で確認します。
 
 再生成:
 

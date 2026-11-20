@@ -46,6 +46,7 @@ public final class ConversionOptions {
     private final PageNumberingMode defaultPageNumberingMode;
     private final Map<String, PageNumberingMode> pageNumberingModes;
     private final PdfMetadata pdfMetadata;
+    private final boolean sheetBookmarks;
 
     private ConversionOptions(Builder builder) {
         this.sheets = Collections.unmodifiableSet(new LinkedHashSet<>(builder.sheets));
@@ -62,6 +63,7 @@ public final class ConversionOptions {
         this.defaultPageNumberingMode = builder.defaultPageNumberingMode;
         this.pageNumberingModes = Collections.unmodifiableMap(new LinkedHashMap<>(builder.pageNumberingModes));
         this.pdfMetadata = builder.pdfMetadata;
+        this.sheetBookmarks = builder.sheetBookmarks;
     }
 
     public static Builder builder() {
@@ -139,6 +141,11 @@ public final class ConversionOptions {
         return pdfMetadata;
     }
 
+    /** Whether each worksheet gets a PDF bookmark at its first page. */
+    public boolean sheetBookmarks() {
+        return sheetBookmarks;
+    }
+
     public static final class Builder {
         private final Set<String> sheets = new LinkedHashSet<>();
         private int dpi = 200;
@@ -154,6 +161,7 @@ public final class ConversionOptions {
         private PageNumberingMode defaultPageNumberingMode = PageNumberingMode.EXCEL_AUTOMATIC;
         private final Map<String, PageNumberingMode> pageNumberingModes = new LinkedHashMap<>();
         private PdfMetadata pdfMetadata;
+        private boolean sheetBookmarks;
 
         private Builder() {
         }
@@ -263,6 +271,12 @@ public final class ConversionOptions {
         /** Optional PDF metadata. Null keeps the existing attributes. */
         public Builder pdfMetadata(PdfMetadata metadata) {
             this.pdfMetadata = metadata;
+            return this;
+        }
+
+        /** Adds a PDF bookmark for each worksheet at its first page. */
+        public Builder sheetBookmarks(boolean sheetBookmarks) {
+            this.sheetBookmarks = sheetBookmarks;
             return this;
         }
 

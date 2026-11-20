@@ -54,6 +54,13 @@ class ConversionOptionsTest {
     }
 
     @Test
+    void sheetBookmarksAreOptIn() {
+        assertThat(ConversionOptions.defaults().sheetBookmarks()).isFalse();
+        assertThat(ConversionOptions.builder().sheetBookmarks(true).build().sheetBookmarks())
+                .isTrue();
+    }
+
+    @Test
     void rejectsOutOfRangeScales() {
         assertThatThrownBy(() -> ConversionOptions.builder().fontScale(0.05))
                 .isInstanceOf(IllegalArgumentException.class);

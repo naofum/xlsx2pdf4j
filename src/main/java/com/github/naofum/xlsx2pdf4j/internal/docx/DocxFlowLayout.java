@@ -94,10 +94,18 @@ final class DocxFlowLayout {
             newPage();
         }
         current.y += before;
+        int outlineLevel = paragraph.style().outlineLevel;
+        String headingTitle = options.headingBookmarks() && outlineLevel >= 0
+                ? headingText(paragraph) : "";
+        boolean bookmarkPending = !headingTitle.isBlank();
         for (DocxTextLayout.Line line : lines) {
             if (current.y > bodyTop() + 0.1
                     && current.y + line.height() > bodyBottom()) {
                 newPage();
+            }
+            if (bookmarkPending) {
+                pdf.addBookmark(headingTitle, current.pageNumber, outlineLevel);
+                bookmarkPending = false;
             }
             textLayout.draw(current.g2, line,
                     model.pageSetup().leftMargin() + line.leftIndent(),
@@ -283,6 +291,16 @@ final class DocxFlowLayout {
             text = text.replaceFirst("(\\d+)(\\s*)$", pageNumber + "$2");
         }
         return text;
+    }
+
+    private static String headingText(DocxParagraphModel paragraph) {
+        StringBuilder text = new StringBuilder();
+        for (DocxRunModel run : paragraph.runs()) {
+            if (run.text() != null) {
+                text.append(run.text());
+            }
+        }
+        return text.toString().replace('\r', ' ').replace('\n', ' ').strip();
     }
 
     private double bodyTop() {
