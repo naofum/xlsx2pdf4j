@@ -88,6 +88,24 @@ class CellBorderOverFillTest {
     }
 
     @Test
+    void borderReferencedWithoutApplyBorderIsRendered() throws Exception {
+        Path input = Path.of("testdata", "validation", "screen-list-ja.xlsx");
+        Path pdfPath = Path.of("target", "screen-list-borders.pdf");
+
+        Xlsx2Pdf.convert(input, pdfPath,
+                ConversionOptions.builder()
+                        .dpi(150)
+                        .textLayerMode(TextLayerMode.NONE)
+                        .build());
+
+        try (PDDocument document = Loader.loadPDF(pdfPath.toFile())) {
+            assertThat(longestDarkRun(document, 0))
+                    .as("a borderId without applyBorder must still be drawn")
+                    .isGreaterThan(300);
+        }
+    }
+
+    @Test
     void previousRowsBottomBorderIsDrawnAtTheTopOfTheNextPage() throws Exception {
         Path workbookPath = Path.of("target", "page-break-border.xlsx");
         Path pdfPath = Path.of("target", "page-break-border.pdf");

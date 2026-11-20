@@ -64,6 +64,7 @@ public final class ConversionService {
         List<ConversionWarning> warnings = new ArrayList<>();
         Path absoluteOutput = output.toAbsolutePath();
         try (XSSFWorkbook workbook = openWorkbook(input)) {
+            XlsxStyleNormalizer.applyExcelDefaults(workbook);
             FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
             DataFormatter formatter = new DataFormatter(options.locale());
             FontResolver fonts = new FontResolver(options.fontScale());

@@ -53,7 +53,7 @@ dependencies {
 }
 ```
 
-DOCX対応と行高の自動拡張を含む `v1.1.2` は、タグ作成後にJitPackから取得できます。JitPackのMavenを3.9.11に固定するため、Maven Wrapperを同梱しています。
+DOCX対応、行高の自動拡張、`applyBorder` 未設定時の罫線表示を含む `v1.1.2` は、タグ作成後にJitPackから取得できます。JitPackのMavenを3.9.11に固定するため、Maven Wrapperを同梱しています。
 
 Java:
 
@@ -168,7 +168,8 @@ DOCXの失敗は `Docx2PdfException` で通知されます。
 
 - セル値、数値書式、フォント、塗り、罫線、結合セル
 - 結合セルの外周罫線、折り返し、縮小表示、文字のはみ出し
-- 行高未指定の折り返しセルを内容に合わせて自動拡張（横書き・非結合セル）
+- 行高未指定の行を内容に合わせて自動拡張（折り返しセル、大きいフォント、結合セルの単一行）
+- `applyBorder` が未設定のxlsx（openpyxl等）でも `borderId` の罫線を表示
 - 文字回転（45° / 90° をセル中央に配置）
 - セルのグラデーション塗りつぶし（線形・path、複数ストップ、主題色・インデックス色、結合セル）
 - 塗り → 罫線 → テキストの3パス描画（隣接セルの塗りによる罫線欠落を防止）
@@ -242,7 +243,7 @@ DOCXの失敗は `Docx2PdfException` で通知されます。
 - EMF / WMF は対象外
 - 先頭ページ・偶数ページ別ヘッダー / フッターは対象外
 - `normAutofit` の自動縮小は近似
-- 行高未指定の折り返しセルの自動拡張は、横書き・非結合セル・文字列（キャッシュ済み数式の文字列結果を含む）が対象。結合セル、縦書き・回転、縮小表示は対象外。リッチテキストはセル基準フォントで近似し、フォントメトリクスの差によりExcelと数pt異なる場合がある
+- 行高未指定の行の自動拡張は、横書き・文字列（キャッシュ済み数式の文字列結果を含む）が対象。結合セルは1行分のフォント高さのみ拡張し、折り返しによる複数行拡張は行わない。縦書き・回転、縮小表示は対象外。リッチテキストはセル基準フォントで近似し、フォントメトリクスの差によりExcelと数pt異なる場合がある
 - 図形枠線の `cmpd` は `dbl` のみ対応（`thickThin` / `thinThick` / `tri` は単線で近似）
 - 円形矢印はセグメント化したリングと三角形ヘッドで近似（`adj` 未対応）
 - `curvedLeftArrow` / `curvedRightArrow` の `adj` は未対応（既定形状で描画）
@@ -292,7 +293,7 @@ mvn test
 - `testdata/validation/unsupported-shapes.xlsx`: 外接矩形で近似されるプリセット図形のカタログ
 - `testdata/validation/screen-list-ja.xlsx`: 行高未指定の折り返しセル（C6）を含む画面一覧
 
-`screen-list-ja.xlsx` は 150 DPI で1ページです。`RowAutoFitterTest` が行高の自動拡張を、`AutoRowHeightConversionTest` が変換結果を確認します。
+`screen-list-ja.xlsx` は 150 DPI で1ページです。`RowAutoFitterTest` が行高の自動拡張を、`AutoRowHeightConversionTest` と `CellBorderOverFillTest` が変換結果と罫線を確認します。
 
 `attributes.xlsx` は 150 DPI で9ページ、次の5警告を出します。
 

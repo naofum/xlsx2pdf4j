@@ -53,6 +53,9 @@ class RowAutoFitterTest {
 
             fit(layout);
 
+            assertThat(layout.rowHeights[0])
+                    .as("the 16pt merged title needs more than the default height")
+                    .isGreaterThan(defaultHeight);
             assertThat(layout.rowHeights[5])
                     .as("C6 wraps into two lines")
                     .isBetween(defaultHeight * 1.5, defaultHeight * 2.0);

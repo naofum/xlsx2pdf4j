@@ -58,14 +58,14 @@ final class RowAutoFitter {
     }
 
     void fit(SheetLayout layout) {
-        Set<Long> mergedCells = mergedCells(layout);
+        MergedCells merged = mergedCells(layout);
         double[] heights = layout.rowHeights.clone();
         for (int rowIndex = layout.firstRow; rowIndex <= layout.lastRow; rowIndex++) {
             XSSFRow row = layout.sheet.getRow(rowIndex);
             if (row == null || row.getZeroHeight() || hasExplicitHeight(row)) {
                 continue;
             }
-            double required = requiredHeight(layout, row, rowIndex, mergedCells);
+            double required = requiredHeight(layout, row, rowIndex, merged);
             if (required > heights[rowIndex] + HEIGHT_TOLERANCE) {
                 heights[rowIndex] = required;
             }
@@ -74,13 +74,17 @@ final class RowAutoFitter {
     }
 
     private double requiredHeight(SheetLayout layout, XSSFRow row, int rowIndex,
-                                  Set<Long> mergedCells) {
+                                  MergedCells merged) {
         double required = 0;
         for (int column = layout.firstColumn; column <= layout.lastColumn; column++) {
             if (column < 0 || column >= layout.columnWidths.length
                     || layout.columnWidths[column] <= 0
-                    || layout.sheet.isColumnHidden(column)
-                    || mergedCells.contains(key(rowIndex, column))) {
+                    || layout.sheet.isColumnHidden(column)) {
+                continue;
+            }
+            long key = key(rowIndex, column);
+            boolean mergedCell = merged.cells().contains(key);
+            if (mergedCell && !merged.origins().contains(key)) {
                 continue;
             }
             Cell cell = row.getCell(column);
@@ -88,8 +92,7 @@ final class RowAutoFitter {
                 continue;
             }
             XSSFCellStyle style = cell.getCellStyle() instanceof XSSFCellStyle xssf ? xssf : null;
-            if (style == null || !style.getWrapText() || style.getShrinkToFit()
-                    || style.getRotation() != 0) {
+            if (style == null || style.getShrinkToFit() || style.getRotation() != 0) {
                 continue;
             }
             String text = displayText(cell);
@@ -105,7 +108,10 @@ final class RowAutoFitter {
             double indent = style.getIndention() * fonts.scaleSize(fontSize) * 0.6;
             double width = Math.max(1, layout.columnWidths[column]
                     - CELL_HORIZONTAL_PADDING - indent);
-            List<String> lines = textEngine.wrapLines(text, font, fontContext, width, true);
+            // Excel does not auto-fit multi-line text in merged cells. It does
+            // still need enough height for the largest single-line font.
+            boolean wrap = !mergedCell && style.getWrapText();
+            List<String> lines = textEngine.wrapLines(text, font, fontContext, width, wrap);
             double lineHeight = font.getLineMetrics("Ag", fontContext).getHeight();
             if (lineHeight <= 0) {
                 lineHeight = Math.max(1, font.getSize2D());
@@ -147,20 +153,25 @@ final class RowAutoFitter {
         return ct.isSetCustomHeight() && ct.getCustomHeight();
     }
 
-    private static Set<Long> mergedCells(SheetLayout layout) {
+    private record MergedCells(Set<Long> cells, Set<Long> origins) {
+    }
+
+    private static MergedCells mergedCells(SheetLayout layout) {
         Set<Long> cells = new HashSet<>();
+        Set<Long> origins = new HashSet<>();
         for (CellRangeAddress region : layout.mergedRegions) {
             int firstRow = Math.max(layout.firstRow, region.getFirstRow());
             int lastRow = Math.min(layout.lastRow, region.getLastRow());
             int firstColumn = Math.max(layout.firstColumn, region.getFirstColumn());
             int lastColumn = Math.min(layout.lastColumn, region.getLastColumn());
+            origins.add(key(region.getFirstRow(), region.getFirstColumn()));
             for (int row = firstRow; row <= lastRow; row++) {
                 for (int column = firstColumn; column <= lastColumn; column++) {
                     cells.add(key(row, column));
                 }
             }
         }
-        return cells;
+        return new MergedCells(cells, origins);
     }
 
     private static long key(int row, int column) {
